@@ -1,432 +1,595 @@
 ## Imports
 import pytest
 import re
+import sqlite3
 
 from pathlib import Path
 from redbaron import RedBaron
 
-from tests.utils import template_data, template_functions, get_imports
+from tests.utils import *
 #!
 
 ## Paths
-main_module = Path.cwd() / 'cms' / '__init__.py'
-main_module_exists = Path.exists(main_module) and Path.is_file(main_module)
-
 admin = Path.cwd() / 'cms' / 'admin'
-admin_exists = Path.exists(admin) and Path.is_dir(admin)
-
-module = admin / '__init__.py'
-module_exists = Path.exists(module) and Path.is_file(module)
-
+admin_module = admin / '__init__.py'
 models = admin / 'models.py'
-models_exists = Path.exists(models) and Path.is_file(models)
+auth = admin / 'auth.py'
+migrations = Path.cwd() / 'migrations'
+migrations_exists = Path.exists(migrations) and Path.is_dir(migrations)
+versions = migrations / 'versions'
+versions_exists = Path.exists(versions) and Path.is_dir(versions)
+content_db = Path.cwd() / 'cms' / 'content.db'
+content_db_exists = Path.exists(content_db) and Path.is_file(content_db)
+login_template = template_data('login')
 #!
 
 ## Module Functions
-def models_code():
-    with open(models.resolve(), 'r') as models_source_code:
-        return RedBaron(models_source_code.read())
+def get_source_code(file_path):
+    with open(file_path.resolve(), 'r') as source_code:
+        return RedBaron(source_code.read())
+#!
 
-def module_code():
-    with open(module.resolve(), 'r') as module_source_code:
-        return RedBaron(module_source_code.read())
-
-def main_module_code():
-    with open(main_module.resolve(), 'r') as main_module_source_code:
-        return RedBaron(main_module_source_code.read())
+## Source Code
+admin_module_code = get_source_code(admin_module)
+models_code = get_source_code(models)
+auth_code = get_source_code(auth)
 #!
 
 ## Tests
-@pytest.mark.test_admin_blueprint_folder_structure_module1
-def test_admin_blueprint_folder_structure_module1():
-    assert admin_exists, \
-        'Have you created the `admin` blueprint folder?'
-    assert module_exists, \
-        'Have you added the `__init__.py` file to the `admin` blueprint folder?'
-    assert models_exists, \
-        'Have you added the `models.py` file to the `admin` blueprint folder?'
+@pytest.mark.test_models_password_column_module1
+def test_models_password_column_module1():
+    # 1. Models - Password Column
+    # password = db.Column(db.String(100), nullable=False)
+    password = models_code.find('assign', lambda node: \
+        node.target.value == 'password' and \
+        node.value[0].value == 'db' and \
+        node.value[1].value == 'Column' and \
+        node.value[2].type == 'call')
+    password_exists = password is not None
+    assert password_exists, \
+        'Are you assigning `password` a call to the `db.Column()` function?'
 
-@pytest.mark.test_admin_blueprint_models_file_imports_module1
-def test_admin_blueprint_models_file_imports_module1():
-    assert admin_exists, \
-        'Have you created the `admin` blueprint folder?'
-    assert models_exists, \
-        'Have you added the `models.py` file to the `admin` blueprint folder?'
+    first_argument = password.find('atomtrailers', lambda node: \
+        node.parent.type == 'call_argument' and \
+        node.value[0].value == 'db' and \
+        node.value[1].value == 'String' and \
+        node.value[2].type == 'call' and \
+        node.value[2].value[0].value.value == '100')
 
-    import_sql = models_code().find('name', lambda node: \
-        node.value == 'flask_sqlalchemy' and \
-        node.parent.type == 'from_import' and \
-        node.parent.targets[0].value == 'SQLAlchemy') is not None
-    assert import_sql, \
-        'Are you importing `SQLAlchemy` from `flask_sqlalchemy` at the top of `models.py`?'
+    second_argument = password.find('call_argument', lambda node: \
+        str(node.target) == 'nullable' and \
+        node.value.value == 'False'
+    )
+    arguments_exist = first_argument is not None and second_argument is not None
+    assert arguments_exist, \
+            'Are you passing the correct arguments to the `db.Column()` function?'
 
-    import_datetime = models_code().find('name', lambda node: \
-        node.value == 'datetime' and \
-        node.parent.type == 'from_import' and \
-        node.parent.targets[0].value == 'datetime') is not None
-    assert import_datetime, \
-        'Are you importing `datetime` from `datetime`?'
+@pytest.mark.test_models_check_password_module1
+def test_models_check_password_module1():
+    # 2. Models - Check Password
+    # from werkzeug.security import check_password_hash
+    # def check_password(self, value):
+    #     return check_password_hash(self.password, value)
+    security_import = get_imports(models_code, 'werkzeug.security')
+    security_import_exits = security_import is not None
+    assert security_import_exits, \
+        'Do you have a `werkzeug.security` import statement?'
+    check_password_hash_exists = 'check_password_hash' in security_import
+    assert check_password_hash_exists, \
+        'Are you importing `check_password_hash` from `werkzeug.security` in `cms/admin/models.py`?'
+    def_check_password = models_code.find('def', lambda node: \
+        node.name == 'check_password' and \
+        node.arguments[0].target.value == 'self' and \
+        node.arguments[1].target.value == 'value' and \
+        node.parent.type == 'class' and \
+        node.parent.name == 'User'
+    )
+    
+    def_check_password_exists = def_check_password is not None
+    assert def_check_password_exists, \
+        'Have you created a function in the `User` model called `check_password`? Do you have the correct parameters?'
+        
+    check_password_return = def_check_password.find('return', lambda node: \
+        node.value[0].value == 'check_password_hash' and \
+        node.value[1].type == 'call')
+    check_password_return_exists = check_password_return is not None
+    assert check_password_return_exists, \
+        'Are you returning a call to the `check_password_hash()` function?'
+    
+    first_argument = def_check_password.find('atomtrailers', lambda node: \
+        node.parent.type == 'call_argument' and \
+        node.value[0].value == 'self' and \
+        node.value[1].value == 'password')
 
-    db_assignment = models_code().find('atomtrailers', lambda node: \
-        node.value[0].value == 'SQLAlchemy' and \
-        node.value[1].type == 'call' and \
-        node.parent.type == 'assignment' and \
-        node.parent.target.value == 'db')
-    db_assignment_exists = db_assignment is not None
-    assert db_assignment_exists, \
-        'Are you creating an new `SQLAlchemy` instance named `db`?'
-    no_arguments = len(db_assignment.find_all('call_argument')) == 0
-    assert no_arguments, \
-        'Are you passing arguments to the `SQLAlchemy` constructor? If so you can remove them.'
+    second_argument = def_check_password.find('name', lambda node: \
+        node.parent.type == 'call_argument' and \
+        node.value == 'value')
 
-@pytest.mark.test_admin_blueprint_move_model_classes_module1
-def test_admin_blueprint_move_model_classes_module1():
-    assert admin_exists, \
-        'Have you created the `admin` blueprint folder?'
-    assert models_exists, \
-        'Have you added the `models.py` file to the `admin` blueprint folder?'
-    assert main_module_exists, \
-        'Have do you have an `__init__.py` file in the `cms` application folder?'
+    arguments_exist = first_argument is not None and second_argument is not None
+    assert arguments_exist, \
+        'Are you passing the correct arguments to the `check_password_hash()` function?'
 
-    model_classes = list(models_code().find_all('class').map(lambda node: node.name))
-    class_count = len(model_classes) == 4
-    type_class = 'Type' in model_classes
-    content_class = 'Content' in model_classes
-    setting_class = 'Setting' in model_classes
-    user_class = 'User' in model_classes
-    assert class_count, \
-        'Have you moved the four models from `cms/__init__.py` to `cms/admin/models.py`'
-    assert type_class, \
-        'Have you moved the `Type` model from `cms/__init__.py` to `cms/admin/models.py`'
-    assert content_class, \
-        'Have you moved the `Content` model from `cms/__init__.py` to `cms/admin/models.py`'
-    assert setting_class, \
-        'Have you moved the `Setting` model from `cms/__init__.py` to `cms/admin/models.py`'
-    assert user_class, \
-        'Have you moved the `User` model from `cms/__init__.py` to `cms/admin/models.py`'
+@pytest.mark.test_database_migration_module1
+def test_database_migration_module1():
+    # 3. Database Migration
+    # > flask db init
+    # > flask db migrate
+    # > flask db upgrade
+    # > flask add-content
+    assert migrations_exists, \
+        'Have you run the `flask db init` command?'
+    versions_file_exists = versions_exists and len(list(versions.glob('*_.py'))) == 1 
+    assert versions_file_exists, \
+        'Have you run the `flask db migrate` command?'
+        
+    assert content_db_exists, \
+        'Have you run the `flask db upgrade` command?'
 
-    main_module_classes = list(main_module_code().find_all('class').map(lambda node: node.name))
-    main_module_class_count = len(main_module_classes) == 0
-    assert main_module_class_count, \
-        'Have you removed the four models from `cms/__init__.py`?'
+    con = sqlite3.connect(content_db.resolve())
+    con.row_factory = lambda cursor, row: row[0]
+    cursor = con.cursor()
+    tables = cursor.execute("SELECT name FROM sqlite_master WHERE type='table';").fetchall()
+    tables.sort()
+    tables_exist = tables == ['alembic_version', 'content', 'setting', 'type', 'user']
+    assert tables_exist, \
+        'Have you run the `flask db upgrade` command?'
+        
+    content_table = cursor.execute("SELECT COUNT() FROM content").fetchone()
+    user_table = cursor.execute("SELECT COUNT() FROM user").fetchone()
+    content_imported = content_table == 3 and user_table == 1
+    assert content_imported, \
+        'Have you run the `flask add-content` command?'
 
-    models_import = get_imports(main_module_code(), 'cms.admin.models') or get_imports(main_module_code(), '.admin.models')
-    models_import_exists = models_import is not None
-    assert models_import_exists, \
-        'Do you have an import from `cms.admin.models` statement?'
+@pytest.mark.test_template_login_form_module1
+def test_template_login_form_module1():
+    # 4. Template - Login Form
+    # <input type="text" class="input" name="username">
+    # <input type="password" class="input" name="password">
+    # <input type="submit" class="button is-link" value="Login">
+    username_exists = len(login_template.select('input[name="username"][class="input"][type="text"]')) == 1
+    assert username_exists, \
+        'Have you added an `<input>` with the correct attributes to the `Username` control `<div>`?'
 
-    models_import_content = 'Content' in models_import
-    assert models_import_content, \
-        'Are you importing the `Content` model class from `cms.admin.models` in `cms/__init__.py`?'
+    password_exists = len(login_template.select('input[name="password"][class="input"][type="password"]')) == 1
+    assert password_exists, \
+        'Have you added an `<input>` with the correct attributes to the `Password` control `<div>`?'
 
-    models_import_type = 'Type' in models_import
-    assert models_import_type, \
-        'Are you importing the `Type` model class from `cms.admin.models` in `cms/__init__.py`?'
+    submit_exists = len(login_template.select('input[type="submit"][value="Login"].button.is-link')) == 1
+    assert submit_exists, \
+        'Have you added a `submit` `<input>` with the correct attributes to the last control `<div>`?'
 
-    models_import_setting = 'Setting' in models_import
-    assert models_import_setting, \
-        'Are you importing the `Setting` model class from `cms.admin.models` in `cms/__init__.py`?'
-
-    models_import_user = 'User' in models_import
-    assert models_import_user, \
-        'Are you importing the `User` model class from `cms.admin.models` in `cms/__init__.py`?'
-
-@pytest.mark.test_cms_module_import_db_module1
-def test_cms_module_import_db_module1():
-    assert admin_exists, \
-        'Have you created the `admin` blueprint folder?'
-    assert main_module_exists, \
-        'Have do you have an `__init__.py` file in the `cms` application folder?'
-
-    db_assignment = main_module_code().find('atomtrailers', lambda node: \
-        node.value[0].value == 'SQLAlchemy' and \
-        node.value[1].type == 'call' and \
-        node.parent.type == 'assignment' and \
-        node.parent.target.value == 'db') is None
-    assert db_assignment, \
-        'Have you removed the `SQLAlchemy` instance named `db` from `cms/__init__.py`?'
-
-
-    models_import = get_imports(main_module_code(), 'cms.admin.models') or get_imports(main_module_code(), '.admin.models')
-    models_import_exists = models_import is not None
-    assert models_import_exists, \
-        'Do you have an import from `cms.admin.models` statement?'
-
-    db_import_exists = 'db' in models_import
-    assert db_import_exists, \
-        'Are you importing the `db` SQLAlchemy instance from `cms.admin.models` in `cms/__init__.py`?'
-
-    init_app_call = main_module_code().find('name', lambda node: \
-        node.value == 'init_app' and \
-        node.parent.value[0].value == 'db' and \
-        node.parent.value[2].type == 'call')
-    init_app_call_exists = init_app_call is not None
-    assert init_app_call_exists, \
-        'Are you calling the `init_app` method on `db`?'
-    init_app_arg = init_app_call.parent.find('call_argument').value.value == 'app'
-    assert init_app_arg, \
-        'Are you passing `app` to the `init_app` method?'
-
-@pytest.mark.test_cms_module_remove_imports_module1
-def test_cms_module_remove_imports_module1():
-    assert admin_exists, \
-        'Have you created the `admin` blueprint folder?'
-    assert main_module_exists, \
-        'Have do you have an `__init__.py` file in the `cms` application folder?'
-
-    main_import_sql = main_module_code().find('name', lambda node: \
-        node.value == 'flask_sqlalchemy' and \
-        node.parent.type == 'from_import' and \
-        node.parent.targets[0].value == 'SQLAlchemy') is None
-    assert main_import_sql, \
-        'Have you removed the import for `flask_sqlalchemy` from `cms/__init__.py`?'
-
-    main_import_datetime = main_module_code().find('name', lambda node: \
-        node.value == 'datetime' and \
-        node.parent.type == 'from_import' and \
-        node.parent.targets[0].value == 'datetime') is None
-    assert main_import_datetime, \
-        'Have you removed the import for `datetime` from `cms/__init__.py`?'
-
-@pytest.mark.test_admin_blueprint_create_blueprint_module1
-def test_admin_blueprint_create_blueprint_module1():
-    assert admin_exists, \
-        'Have you created the `admin` blueprint folder?'
-    assert module_exists, \
-        'Have you added the `__init__.py` file to the `admin` blueprint folder?'
-
-    blueprint_from = module_code().find('from_import', lambda node: \
-        node.value[0].value == 'flask' and \
-        'Blueprint' in list(node.targets.map(lambda node: str(node)))) is not None
-    assert blueprint_from, \
-        'Are you importing `Blueprint` from `flask` in `cms/admin/__init__.py`?'
-
-    admin_bp = module_code().find('assign', lambda node: node.target.value == 'admin_bp')
-    admin_bp_exists = admin_bp is not None
-    assert admin_bp_exists, \
-        'Are you setting the `admin_bp` variable correctly?'
-
-    blueprint_instance = admin_bp.find('atomtrailers', lambda node: node.value[0].value == 'Blueprint')
-    blueprint_instance_exists = blueprint_instance is not None
-    assert blueprint_instance_exists, \
-        'Are you setting the `admin_bp` variable to an instance of `Content`?'
-
-    blueprint_args = list(blueprint_instance.find_all('call_argument').map(lambda node: str(node.target) + ':' + str(node.value).replace("'", '"')))
-    admin_first = 'None:"admin"' in blueprint_args
-    assert admin_first, \
-        "Are you passing the Blueprint instance the correct arguments? The first argument should be: `'admin'`."
-
-    name_second = "None:__name__" in blueprint_args
-    assert name_second, \
-        'Are you passing the Blueprint instance the correct arguments? The second argument should be: `__name__`.'
-
-    url_prefix = 'url_prefix:"/admin"' in blueprint_args
-    assert url_prefix, \
-        "Are you passing the Blueprint instance the correct arguments? There should be a url_prefix keyword argument set to `'/admin'`."
-
-@pytest.mark.test_admin_blueprint_imports_module1
-def test_admin_blueprint_imports_module1():
-    assert admin_exists, \
-        'Have you created the `admin` blueprint folder?'
-    assert module_exists, \
-        'Have you added the `__init__.py` file to the `admin` blueprint folder?'
-
-    flask_import = get_imports(module_code(), 'flask')
+@pytest.mark.test_auth_imports_module1
+def test_auth_imports_module1():
+    # 5. Auth - Protected Decorator
+    # from functools import wraps
+    # from flask import session, g
+    functools_import = get_imports(auth_code, 'functools')
+    functools_import_exits = functools_import is not None
+    assert functools_import_exits, \
+        'Do you have a `functools` import statement?'
+    wraps_exists = 'wraps' in functools_import
+    assert wraps_exists, \
+        'Are you importing `wraps` from `functools` in `cms/admin/auth.py`?'
+    flask_import = get_imports(auth_code, 'flask')
     flask_import_exits = flask_import is not None
     assert flask_import_exits, \
-        'Are you importing the correct methods and classes from `flask`?'
-    render_template_import = 'render_template' in flask_import
-    assert render_template_import, \
-        'Are you importing `render_template` from `flask` in `cms/admin/__init__.py`?'
-    abort_import = 'abort' in flask_import
-    assert abort_import, \
-        'Are you importing `abort` from `flask` in `cms/admin/__init__.py`?'
+        'Do you have a `flask` import statement?'
+    g_exists = 'g' in flask_import
+    assert g_exists, \
+        'Are you importing `g` from `flask` in `cms/admin/auth.py`?'
+    session_exists = 'session' in flask_import
+    assert session_exists, \
+        'Are you importing `session` from `flask` in `cms/admin/auth.py`?'
 
-    module_import = get_imports(module_code(), 'cms.admin.models') or get_imports(module_code(), '.models')
-    module_import_exists = module_import is not None
-    assert module_import_exists, \
-        'Are you importing the correct methods and classes from `cms.admin.models` in `cms/admin/__init__.py`?'
+@pytest.mark.test_auth_protected_decorator_module1
+def test_auth_protected_decorator_module1():
+    # 6. Auth - Protected Decorator
+    # def protected(route_function):
+    #     def wrapped_route_function(**kwargs):
+    #         return route_function(**kwargs)
+    def_protected = auth_code.find('def', lambda node: \
+        node.name == 'protected' and \
+        node.arguments[0].target.value == 'route_function')
+    def_protected_exists = def_protected is not None
+    assert def_protected_exists, \
+        'Have you created a function at the top of `auth.py` called `protected`? Do you have the correct parameters?'
+    wrapped = def_protected.find('def', lambda node: \
+        node.name == 'wrapped_route_function' and \
+        node.arguments[0].type == 'dict_argument' and \
+        node.arguments[0].value.value == 'kwargs')
+    wrapped_exists = wrapped is not None
+    assert wrapped_exists, \
+        'Have you created a function in the `protected` function called `wrapped_route_function`? Do you have the correct parameters?'
+    wrapped_return = wrapped.find('return', lambda node: \
+        node.value.type == 'atomtrailers' and \
+        node.value.value[0].value == 'route_function' and \
+        node.value.value[1].type == 'call' and \
+        node.value.value[1].value[0].type == 'dict_argument' and \
+        node.value.value[1].value[0].value.value == 'kwargs')
+    wrapped_return_exists = wrapped_return is not None
+    assert wrapped_return_exists, \
+        'Are you returning a call to the `route_function` function in the body of the `wrapped_route_function` function?'    
 
-    name_as_name_content = 'Content' in module_import
-    assert name_as_name_content, \
-        'Are you importing the `Content` model class from `cms.admin.models` in `cms/admin/__init__.py`?'
+@pytest.mark.test_auth_redirect_user_module1
+def test_auth_redirect_user_module1():
+    # 7. Auth - Redirect User
+    # @wraps(route_function)
+    #
+    #     if g.user is None:
+    #         return redirect(url_for('admin.login'))
+    #
+    # return wrapped_route_function
+    def_protected = auth_code.find('def', lambda node: \
+        node.name == 'protected' and \
+        node.arguments[0].target.value == 'route_function')
+    wrapped = def_protected.find('def', name='wrapped_route_function')
+    wrapped_exists = wrapped is not None
+    assert wrapped_exists, \
+        'Have you created a function in the `protected` function called `wrapped_route_function`? Do you have the correct parameters?'
+    wrapped.find('decorator', lambda node: \
+        str(node.value) == 'wraps' and \
+        node.call.value[0].value.value == 'route_function')
+        
+    g_user = get_conditional(wrapped, ['g.user:is:None', 'g.user:==:None'], 'if')
+    g_user_exists = g_user is not None
+    assert g_user_exists, \
+        'Do you have an `if` statement that tests if `g.user` is `None`?'
 
-    name_as_name_type = 'Type' in module_import
-    assert name_as_name_type, \
-        'Are you importing the `Type` model class from `cms.admin.models` in `cms/admin/__init__.py`?'
+    return_redirect = g_user.parent.find('return', lambda node: \
+        node.value[0].value == 'redirect' and \
+        node.value[1].type == 'call')
+    return_redirect_exists = return_redirect is not None
+    assert return_redirect_exists, \
+        'Are you returning a call to the `redirect()` function in the `if` statement?'
+    
+    url_for_call = return_redirect.find_all('atomtrailers', lambda node: \
+        node.value[0].value == 'url_for' and \
+        node.value[1].type == 'call')
+    url_for_call_exists = url_for_call is not None
+    assert url_for_call_exists, \
+        'Are you passing a call to the `url_for()` function to the `redirect()` function?'
+    
+    url_for_args = list(url_for_call.find_all('call_argument').map(lambda node: str(node.target) + ':' + str(node.value.value).replace("'", '"')))
+    url_content = 'None:"admin.login"' in url_for_args
+    assert url_content, \
+        "Are you passing the `'admin.login'` route to the `url_for()` function?"
+    
+    wrapped_return = def_protected.find('return', lambda node: \
+        node.value.type == 'name' and \
+        node.value.value == 'wrapped_route_function')
+    wrapped_return_exists = wrapped_return is not None
+    assert wrapped_return_exists, \
+        'Are you returning the `wrapped_route_function` from the `protected` function?'
 
-    name_as_name_setting = 'Setting' in module_import
-    assert name_as_name_setting, \
-        'Are you importing the `Setting` model class from `cms.admin.models` in `cms/admin/__init__.py`?'
+@pytest.mark.test_auth_load_user_module1
+def test_auth_load_user_module1():
+    # 8. Auth - Load User
+    # @admin_bp.before_app_request
+    # def load_user():
+    #     user_id = session.get('user_id')
+    #     g.user = User.query.get(user_id) if user_id is not None else None
+    load_user = auth_code.find('def', name='load_user')
+    load_user_exists = load_user is not None
+    assert load_user_exists, \
+        'Have you created a function called `load_user`?'
+    type = load_user.find('assign', lambda node: \
+        node.target.value == 'user_id')
+    type_exists = type is not None
+    assert type_exists, \
+        'Are you setting the `user_id` variable correctly?'
+    get_call = type.find('atomtrailers', lambda node: \
+        node.value[0].value == 'session' and \
+        node.value[1].value == 'get' and \
+        node.value[2].type == 'call'
+        )
+    get_call_exists = get_call is not None
+    assert get_call_exists, \
+        'Are you calling the `session.get()` function and assigning the result to `user_id`?'
+    get_argument = get_call.find('call_argument', lambda node: \
+        str(node.value.value).replace("'", '"') == '"user_id"'  
+    ) is not None
+    assert get_argument, \
+        'Are you passing the `session.get()` function the correct argument?'
+    
+    ternary_if = get_conditional(load_user, ['user_id:is:not:None', 'user_id:!=:None'], 'ternary_operator') 
+    ternary_if_exists = ternary_if is not None
+    assert ternary_if_exists, \
+        'Do you have a ternary `if` statement to set `g.user`?'
 
-    name_as_name_user = 'User' in module_import
-    assert name_as_name_user, \
-        'Are you importing the `User` model class from `cms.admin.models` in `cms/admin/__init__.py`?'
+    ternary_parent = ternary_if.parent
+    ternary_parent_exists = ternary_parent is not None
+    assert ternary_parent_exists, \
+        'Do you have a ternary `if` statement to set `g.user`?'
+    
+    ternary_assignment = ternary_parent.parent
+    ternary_assignment_exists = ternary_assignment is not None
+    assert ternary_assignment_exists, \
+        'Do you have an assignment statement that sets `g.user`?'
+        
+    if_branch = ternary_parent.first.find('atomtrailers', lambda node: \
+        node.value[0].value == 'User' and \
+        node.value[1].value == 'query' and \
+        node.value[2].value == 'get' and \
+        node.value[3].type == 'call' and \
+        node.value[3].value[0].value.value == 'user_id') is not None
+    else_branch = ternary_parent.second.value == 'None'
+    final_assignment = ternary_assignment.find('atomtrailers', lambda node: \
+        node.value[0].value == 'g' and \
+        node.value[1].value == 'user') is not None
+    
+    g_user_assignment = final_assignment and if_branch and final_assignment
+    assert g_user_assignment, \
+        'Do you have an assignment statement that sets `g.user` to the user_id from the database or `None`?'
 
-@pytest.mark.test_admin_blueprint_move_routes_module1
-def test_admin_blueprint_move_routes_module1():
-    assert admin_exists, \
-        'Have you created the `admin` blueprint folder?'
-    assert module_exists, \
-        'Have you added the `__init__.py` file to the `admin` blueprint folder?'
-    assert main_module_exists, \
-        'Have do you have an `__init__.py` file in the `cms` application folder?'
+@pytest.mark.test_auth_login_route_module1
+def test_auth_login_route_module1():
+    # 9. Auth - Login Route
+    # @admin_bp.route('/login', methods=('GET', 'POST'))
+    # def login():
+    #     return render_template('admin/login.html')
+    login_decorator = get_route(auth_code, 'login').find('dotted_name', lambda node: \
+        node.value[0].value == 'admin_bp' and \
+        node.value[1].type == 'dot' and \
+        node.value[2].value == 'route' and \
+        node.parent.call.type == 'call' and \
+        rq(node.parent.call.value[0].value.value) == '/login') is not None
+    assert login_decorator, \
+        'Have you add a route decorator to the `login` route function? Are you passing the correct route pattern?'
 
-    methods = list(module_code().find_all('def').map(lambda node: node.name))
+    strings = list(get_methods_keyword(auth_code, 'login').find_all('string').map(lambda node: node.value.replace("'", '"')))
+    post_check = '"GET"' in strings and '"POST"' in strings
+    assert post_check, \
+        'Have you added the `methods` keyword argument to the `edit` route allowing `POST` and `GET`?'
+        
+    return_render = get_route(auth_code, 'login').find('return', lambda node: \
+        node.value[0].value == 'render_template' and \
+        node.value[1].type == 'call')
+    return_render_exists = return_render is not None
+    assert return_render_exists, \
+        'Are you returning a call to the `render_template()` function?'
 
-    requested_type = 'requested_type' in methods
-    assert requested_type, \
-        'Did you move the `requested_type` function from `cms/__init__.py` to `cms/admin/__init__.py`?'
-    content_route_exists = 'content' in methods
-    assert content_route_exists, \
-        'Did you move the `user` function from `cms/__init__.py` to `cms/admin/__init__.py`?'
-    create_route_exists = 'create' in methods
-    assert create_route_exists, \
-        'Did you move the `user` function from `__init__.py` to `cms/admin/__init__.py`?'
-    users_route_exists = 'users' in methods
-    assert users_route_exists, \
-        'Did you move the `user` function from `__init__.py` to `cms/admin/__init__.py`?'
-    settings_route_exists = 'settings' in methods
-    assert settings_route_exists, \
-        'Did you move the `settings` function from `__init__.py` to `cms/admin/__init__.py`?'
+    return_render_args = list(return_render.find_all('call_argument').map(lambda node: str(node.target) + ':' + str(node.value).replace("'", '"')))
+    template_exists = 'None:"admin/login.html"' in return_render_args
+    assert template_exists, \
+        'Are you passing the correct HTML template to the `render_template()` function?'
 
-    decorators = list(set(module_code().find_all('decorator').map(lambda node: node.value.value[0].value)))
-    decorators_changed = 'app' not in decorators
-    assert decorators_changed, \
-        'Have you changed the `@app` decorator to `@admin_ap` on all routes?'
+@pytest.mark.test_auth_post_request_module1
+def test_auth_post_request_module1():
+    # 10. Auth - Post Request
+    # if request.method == 'POST':
+    #     username = request.form['username']
+    #     password = request.form['password']
+    #     error = None
+    post_check = str(get_request_method(auth_code, 'login', False)).find('POST')
+    assert post_check, \
+        'Are you testing if the request method is `POST`?'
+    try:
+        get_form_data(auth_code, 'login', {'username', 'password'}, 'username')
+        get_form_data(auth_code, 'login', {'username', 'password'}, 'password')
+    except:
+        assert False, 'Are you setting `username` and `password` with the correct form data?'
+        
+    error = get_request_method(auth_code, 'login').find('assign', lambda node: \
+        node.target.value == 'error')
+    error_exists = error is not None
+    assert error_exists, \
+        'Do you have a variable named `error`?'
+    error_none = error.value.to_python() is None
+    assert error_none, \
+        'Are you setting the `error` variable correctly?'
+    
+@pytest.mark.test_auth_get_user_module1
+def test_auth_get_user_module1():
+    # 11. Auth - Get User
+    # user = User.query.filter_by(username=username).first()
+    # check = user.check_password(password)
+    user = get_route(auth_code, 'login').find('assign', lambda node: \
+        node.target.value == 'user')
+    user_exists = user is not None
+    assert user_exists, \
+        'Are you setting the `user` variable correctly?'
+    filter_by = user.find('atomtrailers', lambda node: \
+        node.value[0].value == 'User' and \
+        node.value[1].value == 'query' and \
+        node.value[2].value == 'filter_by' and \
+        node.value[3].type == 'call'
+        )
+    filter_by_exists = filter_by is not None
+    assert filter_by_exists, \
+        'Are you calling the `User.query.filter_by()` function and assigning the result to `user`?'
 
-    patterns = list(module_code().find_all('decorator').map(lambda node: re.sub(r'(\'|")', '', str(node.find('call_argument')))))
-    patterns_changed = len([s for s in patterns if "/admin" in s]) == 0
-    assert patterns_changed, \
-            'Have you removed the `/admin` URL prefix from each route?'
+    filter_by_argument = filter_by.find('call_argument', lambda node: \
+        node.target.value == 'username' and \
+        node.value.value == 'username') is not None
+    assert filter_by_argument, \
+        'Are you passing the correct keyword argument to the `User.query.filter_by()` function?'
+    first_call = len(filter_by.value) == 6 and filter_by.value[4].value == 'first' and filter_by.value[5].type == 'call'
+    assert filter_by_argument, \
+        'Have you a append a call to `first()` on `User.query.filter_by()`?'
+    check = get_route(auth_code, 'login').find('assign', lambda node: \
+        node.target.value == 'check')
+    check_exists = check is not None
+    assert check_exists, \
+        'Are you setting the `check` variable correctly?'
+    check_password_call = check.find('atomtrailers', lambda node: \
+        node.value[0].value == 'user' and \
+        node.value[1].value == 'check_password' and \
+        node.value[2].type == 'call' and \
+        node.value[2].value[0].value.value == 'password'
+        ) is not None
+    assert check_password_call, \
+        'Are you calling the `user.check_password()` function and assigning the result to `check`?'
 
-    main_methods = list(main_module_code().find_all('def').map(lambda node: node.name))
-    main_content_removed = 'content' not in main_methods
-    assert main_content_removed, \
-        'Did you remove the `content` function from `__init__.py`?'
-    main_create_removed = 'create' not in main_methods
-    assert main_create_removed, \
-        'Did you remove the `create` function from `__init__.py`?'
-    main_users_removed = 'users' not in main_methods
-    assert main_users_removed, \
-        'Did you remove the `users` function from `__init__.py`?'
-    main_settings_removed = 'settings' not in main_methods
-    assert main_settings_removed, \
-        'Did you remove the `settings` function from `__init__.py`?'
+@pytest.mark.test_auth_validate_form_data_module1
+def test_auth_validate_form_data_module1():
+    # 12. Auth - Validate Form Data
+    # if user is None:
+    #     error = 'Incorrect username.'
+    # elif not user.check_password(password):
+    #     error = 'Incorrect password.'
+    user_error = get_conditional(get_request_method(auth_code, 'login'), [ 'not:user', 'user:is:None', 'user:==:None', 'user:is:""', 'user:==:""'], 'if', True)
 
-@pytest.mark.test_cms_module_register_blueprint_module1
-def test_cms_module_register_blueprint_module1():
-    assert admin_exists, \
-        'Have you created the `admin` blueprint folder?'
-    assert main_module_exists, \
-        'Have do you have an `__init__.py` file in the `cms` application folder?'
+    user_if_exists = user_error is not None
+    assert user_if_exists, \
+        'Do you have a nested `if` statement that tests if `user` is `not` empty.'
+    user_error_message = user_error.parent.find('assign', lambda node: node.target.value == 'error')
+    user_error_message_exists = user_error_message is not None and user_error_message.value.type == 'string'
+    assert user_error_message_exists, \
+        'Are you setting the `error` variable to the appropriate `string` in the `if` statement.'
 
-    bp_import = get_imports(main_module_code(), 'cms.admin') or get_imports(main_module_code(), '.admin')
-    bp_import_exists = bp_import is not None
-    assert bp_import_exists, \
-        'Do you have an import from `cms.admin` statement?'
+    check_error = get_conditional(get_request_method(auth_code, 'login'), ['not:check', 'check:is:None', 'check:==:None', 'check:is:""', 'check:==:""'], 'elif', True)
 
-    admin_bp_import = 'admin_bp' in bp_import
-    assert admin_bp_import, \
-        'Are you importing the `admin_bp` Blueprint from `cms.admin`?'
+    check_elif_exists = check_error is not None
+    assert check_elif_exists, \
+        'Do you have an `elif` statement that tests if `check` is `not` empty?'
+    check_error_message = check_error.parent.find('assign', lambda node: node.target.value == 'error')
+    check_error_message_exists = check_error_message is not None and check_error_message.value.type == 'string'
+    assert check_error_message_exists, \
+        'Are you setting the `error` variable to the appropriate `string` in the `elif` statement.'
 
-    register_bp_call = main_module_code().find('atomtrailers', lambda node: \
-        node.value[0].value == 'app' and \
-        node.value[1].value == 'register_blueprint' and \
-        node.value[2].type == 'call')
-    register_bp_call_exists = register_bp_call is not None
-    assert register_bp_call_exists, \
-        'Are you calling `register_blueprint` on `app`?'
+@pytest.mark.test_auth_store_user_in_session_module1
+def test_auth_store_user_in_session_module1():
+    # 13. Auth - Store User in Session
+    # if error is None:
+    #     session.clear()
+    #     session['user_id'] = user.id
+    #     return redirect(url_for('admin.content', type='page'))
+    # flash(error)
+    error_check = get_request_method(auth_code, 'login').find('comparison', lambda node: \
+        'error' in [str(node.first), str(node.second)])
+    error_check_exists = error_check is not None and error_check.parent.type == 'if' and \
+        ((error_check.first.value == 'error' and error_check.second.value == 'None') or \
+        (error_check.first.value == 'None' and error_check.second.value == 'error')) and \
+        (error_check.value.first == '==' or error_check.value.first == 'is')
+    assert error_check_exists, \
+        'Do you have an `if` statment that is checking if `error` is `None`?'
 
-    register_blueprint_args = list(register_bp_call.find_all('call_argument').map(lambda node: \
-        str(node.target) + ':' + str(node.value)))
-    register_count = len(register_blueprint_args) == 1
-    assert register_count, \
-        'Are you only passing one argument to `register_blueprint`?'
-    admin_bp_registered = "None:admin_bp" in register_blueprint_args
-    assert admin_bp_registered, \
-        'Are you passing the Blueprint instance to should be `register_blueprint`?'
+    error_check_if = error_check.parent
+    clear_call = error_check_if.find('atomtrailers', lambda node: \
+        node.value[0].value == 'session' and \
+        node.value[1].value == 'clear' and \
+        node.value[2].type == 'call'
+        ) is not None
+    assert clear_call, \
+        'Are you calling the `session.clear()` function?'
+        
+    session_user = error_check_if.find('assign', lambda node: \
+        node.target.value[0].value == 'session' and \
+        rq(node.target.value[1].value.value) == 'user_id' and \
+        node.value.value[0].value == 'user' and \
+        node.value.value[1].value == 'id') is not None
+    assert session_user, \
+        'Are you setting the `user_id` `session` key to the value `user.id`?'
+        
+    return_redirect = error_check_if.find('return', lambda node: \
+        node.value[0].value == 'redirect' and \
+        node.value[1].type == 'call')
+    return_redirect_exists = return_redirect is not None
+    assert return_redirect_exists, \
+        'Are you returning a call to the `redirect()` function?'
 
-@pytest.mark.test_admin_blueprint_template_folder_module1
-def test_admin_blueprint_template_folder_module1():
-    assert admin_exists, \
-        'Have you created the `admin` blueprint folder?'
-    assert module_exists, \
-        'Have you added the `__init__.py` file to the `admin` blueprint folder?'
+    url_for_call = return_redirect.find_all('atomtrailers', lambda node: \
+        node.value[0].value == 'url_for' and \
+        node.value[1].type == 'call')
+    url_for_call_exists = url_for_call is not None
+    assert url_for_call_exists, \
+        'Are you passing a call to the `url_for()` function to the `redirect()` function?'
 
-    admin_bp = module_code().find('assign', lambda node: \
-        node.target.value == 'admin_bp')
-    admin_bp_exists = admin_bp is not None
-    assert admin_bp_exists, \
-        'Are you setting the `admin_bp` variable correctly?'
-    blueprint_instance = admin_bp.find('atomtrailers', lambda node: \
-        node.value[0].value == 'Blueprint')
-    blueprint_instance_exists = blueprint_instance is not None
-    assert blueprint_instance_exists, \
-        'Are you setting the `admin_bp` variable to an instance of `Content`?'
-    blueprint_args = list(blueprint_instance.find_all('call_argument').map(lambda node: \
-        str(node.target) + ':' + str(node.value).replace("'", '"')  ))
-    blueprint_template_folder = 'template_folder:"templates"' in blueprint_args
-    assert blueprint_template_folder, \
-        "Are you passing the Blueprint instance the correct arguments? There should be a `template_folder` keyword argument set to `'templates'`."
+    url_for_args = list(url_for_call.find_all('call_argument').map(lambda node: \
+        str(node.target) + ':' + str(node.value).replace("'", '"')))
+    url_content = 'None:"admin.content"' in url_for_args
+    assert url_content, \
+        "Are you passing the `'admin.content'` to the `url_for()` function?"
+        
+    url_type = 'type:"page"' in url_for_args
+    assert url_type, \
+        'Are you passing a `type` keyword argument set to `type.name` to the `url_for()` function?'
 
-    admin_templates = admin / 'templates'
-    admin_templates_exists = Path.exists(admin_templates) and Path.is_dir(admin_templates)
-    assert admin_templates_exists, \
-        'Have you created a `templates` folder in the `admin` blueprint folder?'
+    flash_exists = get_request_method(auth_code, 'login').find('atomtrailers', lambda node: \
+        node.value[0].value == 'flash' and \
+        node.value[1].type == 'call' and \
+        node.value[1].value[0].value.value == 'error') is not None
+    assert flash_exists, \
+        'Are you flashing an `error` at the end of the `request.method` `if`?'
 
-    move = admin_templates / 'admin'
-    move_exists = Path.exists(move) and Path.is_dir(move)
-    assert move_exists, \
-        'Have you move the `admin` folder from the root `templates` folder to the `admin` blueprint `templates` folder?'
+@pytest.mark.test_auth_logout_route_module1
+def test_auth_logout_route_module1():
+    # 14. Auth - Logout Route
+    # @admin_bp.route('/logout')
+    # def logout():
+    #     session.clear()
+    #     return redirect(url_for('admin.login'))
+    login_decorator = get_route(auth_code, 'logout').find('dotted_name', lambda node: \
+        node.value[0].value == 'admin_bp' and \
+        node.value[1].type == 'dot' and \
+        node.value[2].value == 'route' and \
+        node.parent.call.type == 'call' and \
+        rq(node.parent.call.value[0].value.value) == '/logout') is not None
+    assert login_decorator, \
+        'Have you added a route decorator to the `logout` route function? Are you passing the correct route pattern?'
+    
+    clear_call = get_route(auth_code, 'logout').find('atomtrailers', lambda node: \
+        node.value[0].value == 'session' and \
+        node.value[1].value == 'clear' and \
+        node.value[2].type == 'call'
+        ) is not None
+    assert clear_call, \
+        'Are you calling the `session.clear()` function?'
+    
+    return_redirect = get_route(auth_code, 'logout').find('return', lambda node: \
+        node.value[0].value == 'redirect' and \
+        node.value[1].type == 'call')
+    return_redirect_exists = return_redirect is not None
+    assert return_redirect_exists, \
+        'Are you returning a call to the `redirect()` function?'
 
-    content        = move / 'content.html'
-    content_exists = Path.exists(content) and Path.is_file(content)
-    assert content_exists, \
-        'Is the `content.html` template file in the `cms/admin/templates/admin` folder?'
+    url_for_call = return_redirect.find_all('atomtrailers', lambda node: \
+        node.value[0].value == 'url_for' and \
+        node.value[1].type == 'call')
+    url_for_call_exists = url_for_call is not None
+    assert url_for_call_exists, \
+        'Are you passing a call to the `url_for()` function to the `redirect()` function?'
 
-    content_form        = move / 'content_form.html'
-    content_form_exists = Path.exists(content_form) and Path.is_file(content_form)
-    assert content_form_exists, \
-        'Is the `content_form.html` template file in the `cms/admin/templates/admin` folder?'
+    url_for_args = list(url_for_call.find_all('call_argument').map(lambda node: str(node.target) + ':' + str(node.value.value).replace("'", '"')))
+    url_content = 'None:"admin.login"' in url_for_args
+    assert url_content, \
+        "Are you passing the `'admin.login'` route to the `url_for()` function?"
 
-    layout        = move / 'layout.html'
-    layout_exists = Path.exists(layout) and Path.is_file(layout)
-    assert layout_exists, \
-        'Is the `layout.html` template file in the `cms/admin/templates/admin` folder?'
+    logout_el = template_data('layout').select('a.button.is-light')
+    logout_exists = len(logout_el) == 1
+    assert logout_exists, \
+        'Have you added an `<a>` with the correct attributes to the `navbar-item` `<div>` in `layout.html`?'
+    
+    a_contents_len = len(logout_el[0].contents) >= 1 
+    assert a_contents_len, \
+            'Does your logout link contain the word `Logout`?'
 
-    settings        = move / 'settings.html'
-    settings_exists = Path.exists(settings) and Path.is_file(settings)
-    assert settings_exists, \
-        'Is the `settings.html` template file in the `cms/admin/templates/admin` folder?'
+    a_contents = (logout_el[0].contents[0]).lower() == 'logout'
+    assert a_contents, \
+        'Does your logout link contain the word `Logout`?'
 
-    users        = move / 'users.html'
-    users_exists = Path.exists(users) and Path.is_file(users)
-    assert users_exists, \
-        'Is the `users.html` template file in the `cms/admin/templates/admin` folder?'
+    links = 'admin.logout:' in template_functions('layout', 'url_for')
+    assert links, \
+        'Do you have an `href` with a call to `url_for` pointing to `admin.logout`?'
 
-    links = template_functions('layout', 'url_for')
-    page_link_exists = 'admin.content:type:page' in links
-    assert page_link_exists, \
-        'Have you updated the `url_for` for `Pages` in `admin/templates/admin/layout.html`?'
-
-    post_link_exists     = 'admin.content:type:post' in links
-    assert post_link_exists, \
-        'Have you updated the `url_for` for `Posts` in `admin/templates/admin/layout.html`?'
-
-    partial_link_exists  = 'admin.content:type:partial' in links
-    assert partial_link_exists, \
-        'Have you updated the `url_for` for `Partial` in `admin/templates/admin/layout.html`?'
-
-    template_link_exists = 'admin.content:type:template' in links
-    assert template_link_exists, \
-        'Have you updated the `url_for` for `Templates` in `admin/templates/admin/layout.html`?'
-
-    users_link_exists    = 'admin.users:' in links
-    assert users_link_exists, \
-        'Have you updated the `url_for` for `Users` in `admin/templates/admin/layout.html`?'
-
-    settings_link_exists = 'admin.settings:' in links
-    assert settings_link_exists, \
-        'Have you updated the `url_for` for `Settings` in `admin/templates/admin/layout.html`?'
+@pytest.mark.test_admin_protect_routes_module1
+def test_admin_protect_routes_module1():
+    # 15. Admin - Protect Routes
+    # Protect all routes with the custom decorator.
+    # from cms.admin import auth
+    # @auth.protected
+    admin_import = get_imports(admin_module_code, 'cms.admin')
+    admin_import_exits = admin_import is not None
+    assert admin_import_exits, \
+        'Do you have a `cms.admin` import statement?'
+    auth_exists = 'auth' in admin_import
+    assert auth_exists, \
+        'Are you importing `auth` from `cms.admin` in `cms/admin/__init__.py`?'
+    function_names = ['content', 'create', 'edit', 'settings', 'users']
+    decorators = list(admin_module_code.find_all('decorator', lambda node: \
+        str(node.value) == 'auth.protected').map(lambda node: node.parent.name))
+    decorators.sort()
+    decorators_exist = function_names == decorators
+    assert decorators_exist, \
+        'Have you added the `@auth.protected` decorator to the five route functions in `admin/__init.py`?'
 #!

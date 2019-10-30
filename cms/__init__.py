@@ -1,7 +1,9 @@
+## Imports
 from flask import Flask, render_template, abort
 
 from cms.admin.models import Content, Type, User, Setting, db
 from cms.admin import admin_bp
+#!
 
 ## Application Configuration
 app = Flask(__name__)
@@ -32,7 +34,7 @@ def index(slug):
     titles = Content.query.with_entities(Content.slug, Content.title).join(Type).filter(Type.name == 'page')
     content = Content.query.filter(Content.slug == slug).first_or_404()
     return render_template('index.html', titles=titles, content=content)
-#!
-
+    
 if __name__ == "__main__":
     app.run(debug=True)
+#!

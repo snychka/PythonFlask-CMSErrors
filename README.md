@@ -20,7 +20,7 @@ Open a command prompt or powershell and run the following commands, replacing 'p
 ```
 
 ### macOS
-Open a terminal and run the following commands, replacing 'project-root' with the path to the root folder of the cloned Project repo.
+Open a terminal and run the following commands, replacing 'project-root' with the path to the root folder of the project.
 ```
 $ cd 'project-root'
 $ python3 -m venv venv
@@ -42,4 +42,3 @@ You should see that all the tests are failing. This is good! We’ll be fixing t
 
 ## Previewing Your Work
 You can preview your work by running `flask run` in the root of your fork. Then visit `http://localhost:5000/admin` in your browser. You will see a working preview after completing the first module.
-*Note: On Windows you may need to run `python -m flask run` instead of `flask run`.*

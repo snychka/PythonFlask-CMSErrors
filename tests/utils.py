@@ -19,6 +19,61 @@ def template_data(name):
         html += node.data
     return BeautifulSoup(html, 'html.parser')
 
+def simplify(main):
+    def _simplify(node):
+        if not isinstance(node, nodes.Node):
+            if isinstance(node, (type(None), bool)):
+                buf.append(repr(node))
+            else:
+                buf.append(node)
+            return
+
+        for idx, field in enumerate(node.fields):
+            value = getattr(node, field)
+            if value == 'load' or value == 'store':
+                return
+            if idx:
+                buf.append('.')
+            if isinstance(value, list):
+                for idx, item in enumerate(value):
+                    if idx:
+                        buf.append('.')
+                    _simplify(item)
+            else:
+                _simplify(value)
+
+    buf = []
+    _simplify(main)
+    return ''.join(buf)
+
+def get_calls(name):
+    calls = []
+    for node in parsed_content(name).find_all(nodes.Call):
+        calls.append(simplify(node))
+    return calls
+
+def select_code(content, start, end):
+    found = False
+    code = []
+
+    if isinstance(content, str):
+        parsed = parsed_content(content)
+    elif isinstance(content, nodes.Node):
+        parsed = content
+    else:
+        return []
+
+    for node in parsed.find_all(nodes.Node):
+        if isinstance(node, nodes.TemplateData) and bool(re.search(start, node.data)):
+            found = True
+
+        if isinstance(node, nodes.TemplateData) and bool(re.search(end, node.data)):
+            found = False
+
+        if found and not isinstance(node, nodes.TemplateData):
+            code.append(node)
+    return code
+
 def template_functions(name, function_name):
     functions = []
 
@@ -47,56 +102,6 @@ def template_functions(name, function_name):
 
     return functions
 
-def select_code(content, start, end):
-    found = False
-    code = []
-
-    if isinstance(content, str):
-        parsed = parsed_content(content)
-    elif isinstance(content, nodes.Node):
-        parsed = content
-    else:
-        return []
-
-    for node in parsed.find_all(nodes.Node):
-        if isinstance(node, nodes.TemplateData) and bool(re.search(start, node.data)):
-            found = True
-
-        if isinstance(node, nodes.TemplateData) and bool(re.search(end, node.data)):
-            found = False
-
-        if found and not isinstance(node, nodes.TemplateData):
-            code.append(node)
-    return code
-
-def is_for(node):
-    if isinstance(node, nodes.For):
-        return True
-    return False
-
-def if_statements(name):
-    return parsed_content(name).find(nodes.CondExpr)
-
-def filters(name):
-    filters = []
-    for node in parsed_content(name).find_all(nodes.Filter):
-        filters.append(simplify(node))
-    return filters
-
-def get_calls(name):
-    for_loop = parsed_content(name).find(nodes.For)
-    calls = []
-    for node in for_loop.find_all(nodes.Call):
-        calls.append(simplify(node))
-    return calls
-
-def get_variables(elements):
-    variables = []
-    for element in elements:
-        if isinstance(element, nodes.Getattr):
-            variables.append(simplify(element))
-    return variables
-
 def get_imports(code, value):
     imports = code.find_all('from_import',  lambda node: ''.join(list(node.value.node_list.map(lambda node: str(node)))) == value).find_all('name_as_name')
     return list(imports.map(lambda node: node.value))
@@ -104,7 +109,7 @@ def get_imports(code, value):
 def get_conditional(code, values, type, nested=False):
     def flat(node):
         if node.type == 'comparison':
-            return '{}:{}:{}'.format(str(node.first).replace("'", '"'), str(node.value), str(node.second).replace("'", '"'))
+            return '{}:{}:{}'.format(str(node.first).replace("'", '"'), str(node.value).replace(' ', ':'), str(node.second).replace("'", '"'))
         elif node.type == 'unitary_operator':
             return '{}:{}'.format(str(node.value), str(node.target).replace("'", '"'))
 
@@ -115,29 +120,72 @@ def get_conditional(code, values, type, nested=False):
             return final_node
     return None
 
-def simplify(main):
-    def _simplify(node):
-        if not isinstance(node, nodes.Node):
-            if isinstance(node, (type(None), bool)):
-                buf.append(repr(node))
-            else:
-                buf.append(node)
-            return
+def rq(string):
+    return re.sub(r'(\'|")', '', str(string))
 
-        for idx, field in enumerate(node.fields):
-            value = getattr(node, field)
-            if value == 'load' or value == 'store':
-                return
-            if idx:
-                buf.append('.')
-            if isinstance(value, list):
-                for idx, item in enumerate(value):
-                    if idx:
-                        buf.append('.')
-                    _simplify(item)
-            else:
-                _simplify(value)
+def get_route(code, route):
+    route_function = code.find('def', name=route)
+    route_function_exists = route_function is not None
+    assert route_function_exists, \
+        'Does the `{}` route function exist in `cms/admin/__init__.py`?'.format(route)
+    return route_function
 
-    buf = []
-    _simplify(main)
-    return ''.join(buf)
+def get_methods_keyword(code, route):
+    methods_keyword = get_route(code, route).find_all('call_argument', lambda node: \
+        str(node.target) == 'methods')
+    methods_keyword_exists = methods_keyword is not None
+    assert methods_keyword_exists, \
+        'Does the `{}` route have a keyword argument of `methods`?'.format(name)
+    return methods_keyword
+
+def get_request_method(code, route, parent=True):
+    request_method = get_route(code, route).find('comparison', lambda node: \
+        'request.method' in [str(node.first), str(node.second)])
+    request_method_exists = request_method is not None
+    assert request_method_exists, \
+        'Do you have an `if` statement in the `{}` route that checks `request.method`?'.format(route)
+    return request_method.parent if parent else request_method
+
+def get_form_data(code, route, values, name):
+    index = list(get_request_method(code, route).find_all('atomtrailers', lambda node: \
+        node.parent.type == 'assignment' and \
+        node.value[0].value == 'request' and \
+        node.value[1].value == 'form' and \
+        node.value[2].type == 'getitem').map(lambda node: rq(node.value[2].value)))
+
+    get = list(get_request_method(code, route).find_all('atomtrailers', lambda node: \
+        node.value[0].value == 'request' and \
+        node.value[1].value == 'form' and \
+        node.value[2].value == 'get' and \
+        node.value[3].type == 'call').map(lambda node: rq(node.value[3].value[0].value)))
+
+    diff = list(set(index + get) - values)
+    diff_exists = len(diff) == 0
+    message = 'You have extra `request.form` statements. You can remove those for these varaibles {}'.format(diff)
+    assert diff_exists, message
+    
+    assignment = get_request_method(code, route).find('assign', lambda node: \
+        str(node.target) == name)
+    assignment_exists = assignment is not None
+    assert assignment_exists, \
+        'Do you have a variable named `{}`?'.format(name)
+    
+    name_as_string = '"{}"'.format(name.replace('content.', ''))
+    sub_name = '[{}]'.format(name_as_string)
+    
+    right = assignment.find('atomtrailers', lambda node: \
+        node.value[0].value == 'request' and \
+        node.value[1].value == 'form' and \
+        node.value[2].type == 'getitem' and \
+        node.value[2].find('string', lambda node: str(node.value).replace("'", '"') == name_as_string)) is not None
+    
+    right_get = assignment.find('atomtrailers', lambda node: \
+        node.value[0].value == 'request' and \
+        node.value[1].value == 'form' and \
+        node.value[2].value == 'get' and \
+        node.value[3].type == 'call' and \
+        node.value[3].find('string', lambda node: str(node.value).replace("'", '"') == name_as_string)) is not None
+    
+    assert right or right_get, \
+        'Are you setting the `{}` varaible to the correct form data?'.format(name)
+

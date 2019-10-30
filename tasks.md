@@ -1,279 +1,130 @@
-# Module 1 - Admin Blueprint
+# Module 1 - Authentication
 
-## Admin Blueprint - Folder Structure
-@pytest.mark.test_admin_blueprint_folder_structure_module1
+## 1.1 - Models: Password Column
+[tag]: # (@pytest.mark.test_models_password_column_module1)
 
-Over the course of this module we will create a Flask Blueprint. You can think of a Flask Blueprint as an application component. It isn't an application itself, but can be registered in an application. This allows for a more modular architecture. The Blueprint has to have somewhere to live, so we will need to add a new folder and two new files.
+Project Overview
+-----
 
-To start, create a new folder called `admin` in the `cms` folder. Also, add the special file `__init__.py` to this new `admin` folder. This file will be empty for now. _Note: `admin` is now a module._
+In this module we'll alter the SQLAlchemy `User` model to include a `password` column. Using `Flask-Migrate`, we will add the new column to the database and populate the required fields. We will create a login HTML form and validate the form data in a new login route. The currently logged in user will be stored in a Flask `session`. The session will be cleared when the user logs out.
 
-The Blueprint will allow us to restructure the main `cms/__init__.py` file so that it isn't so cluttered. First, we will prepare a new home for our SQLAlchemy model classes. Create an empty file called `models.py` in the `admin` folder.
+First Task
+-----
 
-## Admin Blueprint - Models File Imports
-@pytest.mark.test_admin_blueprint_models_file_imports_module1
+Open the file called `models.py` in the `cms/admin` folder. Find the `User` model, add a column of type `string` with a size of `100`. Make sure `nullable` is `False`. Name this column `password`.
 
-In order to move our model classes to the newly created `admin/models.py` file we need to have a couple imports.
+## 1.2 - Models: Check Password
+[tag]: # (@pytest.mark.test_models_check_password_module1)
 
-* Import `SQLAlchemy` from `flask_sqlalchemy`
-* Import `datetime` from `datetime`
+Eventually we are going to need to verify the username and password of a user. There are a few functions that are part of `werkzeug.security` that can help us out. Import `check_password_hash` from `werkzeug.security` below the other imports.
 
-All of the model classes require a `SQLAlchemy` instance. Create a new instance by calling the `SQLAlchemy` constructor with no arguments and assign it to a variable called `db`. _Note: Make sure the instance name is `db`. It is what is currently used in the model classes._
+The best place for a password check is in the `User` model itself. Add a function called `check_password` to the `User` model below the `password` column. Since `check_password` is part of a class pass two parameters, `self` and `value`.
 
-## Admin Blueprint - Move Model Classes
-@pytest.mark.test_admin_blueprint_move_model_classes_module1
+In the body of `check_password` return a call to the `check_password_hash` function. Pass in the new class variable `password` (**Hint: self.**), and the `value`.
 
-Now that `models.py` has the correct imports and has a SQLAlchemy instance, we can move the model classes over.
+## 1.3 - Database Migration
+[tag]: # (@pytest.mark.test_database_migration_module1)
 
-Move the `Type`,  `Content`, `Setting`, and `User` classes from `cms/__init__.py` to `cms/admin/models.py`. _Note: Make sure to remove the model classes from `cms/__init__.py`._
+There is currently no database for the application. Let's create one and migrate the new scheme that includes our new `password` column. Open a terminal, command propmt, or powershell and `cd` to the root folder of the project.
 
-The routes that are in `cms/__init__.py` still need access to these models, let's add them back with an import.
+The `Flask-Migrate` extension should be installed. This exenstion provides several `flask db` commands.
 
-- Import `Type`,  `Content`, `Setting`, and `User` from `cms.admin.models`
+- First, to initialize and configure our schema run the `flask db init` command.
+- Second, to create a migration run the `flask db migrate` command.
+- Third, to create the database and run the migration use `flask db upgrade`.
+- Finally, run the custom command `flask add-content` to add content to the database.
 
-Remove the `db` `SQLAlchemy` instance from `cms/__init__.py`.
+## 1.4 - Template: Login Form
+[tag]: # (@pytest.mark.test_template_login_form_module1)
 
-_Note: If you try to preview the application at this point you will receive an error about `SQLAlchemy` not being connected to the `app`. We will fix this shortly._
+Open the `login.html` file found in the `templates` folder of the `admin` blueprint. This template contains a `<form>` element with several empty `<div>`s. Each one having a class of `control`. Let's add a form control to each one. 
 
-## CMS Module - Import db
-@pytest.mark.test_cms_module_import_db_module1
+Find the label with the text, _Username_. In the _control_ `<div>` below, add a text field that has a name of `username` and a class of `input`.
+Find the label with the text, _Password_. In the _control_ `<div>` below, add a text field that has a name of `password` and a class of `input`.
 
-Since we have removed the model classes and `SQLAlchemy` instance from `cms/__init__.py` we need a way to reconnect the `db` to the `app`.
+In the last empty `<div>` towards the bottom, add a submit button that has a `value` of `Submit`. Give it two classes, `button` and `is-link`.
 
-First import the `db` instance from the `models` file. **Hint: you already have an import statement.**
+## 1.5 - Auth: Imports
+[tag]: # (@pytest.mark.test_auth_imports_module1)
 
-In `cms/__init__.py`, below the `SQLAlchemy` configuration lines, call the `init_app` method on `db`. Pass in the `app`.
+The `auth.py` file in `cms/admin` will contain all authentication related code. Open it and at the top add the following imports:
 
-## CMS Module - Remove Imports
-@pytest.mark.test_cms_module_remove_imports_module1
+- import `wraps` from `functools`
+- import `session` and `g` from `flask`
 
-All of the models are located in the new `admin/models.py`. So, we can clean up some unnecessary code in `cms/__init__.py`.
+These will be necessary for when we create our custom authentication decorator. _Note: Unless otherwise noted, the rest of the tasks in this module happen in the file `auth.py`._
 
-Remove the following imports: 
-- `flask_sqlalchemy` 
-- `datetime` imports.
+## 1.6 - Auth: Protected Decorator
+[tag]: # (@pytest.mark.test_auth_protected_decorator_module1)
 
-## Admin Blueprint - Create a Blueprint
-@pytest.mark.test_admin_blueprint_create_blueprint_module1
+To require users to login when accessing any of the admin dashboard routes i.e. `/admin` lets create a custom route decorator.
+Below the imports create a function called `protected`. The first parameter to the function should be called `route_function`.
 
-It is now time to create the actual Blueprint. Open `cms/admin/__init__.py` and at the top import the `Blueprint` class from `flask`.
+In the body of this new function create another function called `wrapped_route_function`. To allow this function to accept an arbitry number of arguments use `**kwargs` as the first parameter. 
 
-Next, create a new variable called `admin_bp` and assign it a call to the  `Blueprint` class constructor. Pass in the correct arguments to create a blueprint that has a name of `admin`, the correct import name, and a url prefix of `/admin`.
+For now the only statement in the body of the `wrapped_route_function` should return a call to the `route_function`. Pass `**kwargs` as the first argument.
 
-## Admin Blueprint - Imports
-@pytest.mark.test_admin_blueprint_imports_module1
+## 1.7 - Auth: Redirect User
+[tag]: # (@pytest.mark.test_auth_redirect_user_module1)
 
-In preparation for moving the existing routes to the blueprints we will need to import a few things from `flask`.
+For the decorator to correctly wrap the route function, add the `@wraps` decorator to the `wrapped_route_function` function. Make sure to pass `route_function` to the decorator.
 
-We are already importing the `Blueprint` class so let's use that same import to import the `render_template` and `abort` methods.
+Next, in the body of `wrapped_route_function` above the `return` statement, add an `if` statement that tests whether `g.user` is `None`.
+In the `if` return a redirect that points to `admin.login`. *Hint: you will need a url_for function.*
 
-We also need the `SQLAlchemy` models. Import them from `models.py`.
+At the bottom of the `protected` function, make sure you are not in the `wrapped_route_function` function, `return` `wrapped_route_function`.
 
-## Admin Blueprint - Move Routes
-@pytest.mark.test_admin_blueprint_move_routes_module1
+## 1.8 - Auth: Load User
+[tag]: # (@pytest.mark.test_auth_load_user_module1)
 
-The core of any Blueprint are its routes. Our app currently has 4 routes that would be better suited in the `admin` Blueprint. 
-Move the `content`, `create`, `users` and `settings` routes to `cms/admin/__init__.py`.
-_Note: Make sure that you also move the `requested_type` method._
-_Note: remove the routes from `cms/__init__.py`._
+Below the new decorator create a new function called `load_user`. As the first line _get_ the `user_id` from the _session_ and store it in a variable called `user_id`. Decorate the function with the `before_app_request` decorator. *Hint: auth.py is part of the `admin_bp` blueprint*.
 
-Once the routes are in `cms/admin/__init__.py` make them a part of the Blueprint by changing the first part each decorator.   _Note: if you get the *NameError: name 'app' is not defined* you have possibly missed changing a decorator._
+As the last line of `load_user` use a ternary `if` to assign `g.user` the result of `User.query.get(user_id)` if `user_id is not None` else assign it `None`.
 
-Remove the `/admin` URL prefix from each route pattern.
+## 1.9 - Auth: Login Route
+[tag]: # (@pytest.mark.test_auth_login_route_module1)
 
-_Note: If you preview the application, the `admin` routes will not exists. You will get a 404. We will fix this shortly._
+Let's create a new route function called `login`. Add a route decorator with a URL pattern of `/login`. Make sure this new route allows _GET_ and _POST_ requests. _Note: this route is part of our `admin_bp` blueprint._
 
-## CMS Module - Register Blueprint
-@pytest.mark.test_cms_module_register_blueprint_module1
+In the body render the 'admin/login.html' template, make sure to `return` the results.
 
-Now that the Blueprint is complete it can be registered in the application.
+## 1.10 - Auth: Post Request
+[tag]: # (@pytest.mark.test_auth_post_request_module1)
 
-Open `cms/__init__.py` and import the `admin_bp` instance from the admin `Blueprint` module.
+Above the redirect statements, add an `if` that checks if the request method is _POST_. If so, assign create two variable, `username` and `password` and assign each the appropriate form data. We are going to validate some of our form data on the server side, so, set a new variable called `error` to `None`.
 
-Once it has been imported register `admin_bp` in the `app`.
+## 1.11 - Auth: Get User & Check Password
+[tag]: # (@pytest.mark.test_auth_get_user_module1)
 
-## Admin Blueprint - Templates Folder
-@pytest.mark.test_admin_blueprint_template_folder_module1
+Let's check if a user exists with the `username` that is provided. _query_ the `User` model and _filter_by()_ the `username`. Make sure to take just the _first()_ row and assign it to a `user` variable.
 
-We can also move the templates that pertain to the admin blueprint routes to the `cms/admin` folder, so everything is self-contained.
+Check the password of the `user` by calling `check_password` on the `user` object. Assign the result to a variable called `check`.
 
-First, create a `templates` folder in the `cms/admin` folder. Second, move the `admin` folder from the `cms/templates` folder to the newly created `cms/admin/templates` folder.
+## 1.12 - Auth: Validate Form Data
+[tag]: # (@pytest.mark.test_auth_validate_form_data_module1)
 
-The new structure:
+We want to make sure the `user` exists, so in an `if` statement check if `user` is `None`.  Also verify the password is correct. _Note:  Use an `elif`, `check` should not be `None`._
+Both the `if` and `elif` should set `error` to an appropriate message.
 
-```
-cms
-├── __init__.py
-├── admin
-│   ├── __init__.py
-│   ├── models.py
-│   └── templates
-│       └── admin
-│           ├── content.html
-│           ├── content_form.html
-│           ├── layout.html
-│           ├── settings.html
-│           └── users.html
-└── templates
-    └── index.html
-```
+## 1.13 - Auth: Store User in Session
+[tag]: # (@pytest.mark.test_auth_store_user_in_session_module1)
 
-Open `cms/admin/__init__.py` and add a new keyword argument to the `Blueprint` instance that sets the template folder to `templates`.
+If there is  no `error` _clear()_ the the _session_. Also, store the value of `user.id` in the _session_ key `user_id`. Then finally _redirect_ to `admin.content` with `type` set to `'page'`.
 
-Finally, open `cms/admin/templates/admin/layout.html` and add `admin.` to the beginning of the first argument of each `url_for()` call. There is also a `url_for()` call that needs to be changed in `cms/admin/templates/admin/content.html`
+Outside the error `if` statement _flash()_ the `error`.
 
-# Module 2 - Create Route
+## 1.14 - Auth: Logout Route
+[tag]: # (@pytest.mark.test_auth_logout_route_module1)
 
-## Template - Add Form Controls
-@pytest.mark.test_template_add_from_controls_module2
+Let's create a new route function called `logout`. Add a route decorator with a URL pattern of `/logout`. _Note: this route is part of our `admin_bp` blueprint._ 
 
-In this module we will make it possible to create content in our CMS. We'll start by adding form controls to our HTML template.
+In the body _clear()_ the _session_, and return a redirect to `admin.login`.
 
-Open the `content_form.html` file that can now be found in the `templates` folder of the `admin` blueprint. This template contains a `<form>` element with several empty `<div>`s. Each one having a class of `control`. Let's add a form control to each one.
+Switch to `layout.html` and find the `<div>` that has a class of `nav-item`. To this `<div>` add an anchor element that says `Logout` and has two classes, `button` and `is-light`. In the `href` attribute use the `url_for()` function to point to the `admin.logout` route.
 
-Find the label with the text, _Title_. In the _control_ `<div>` below, add a text field that has a name of `title` and a class of `input`.
+## 1.15 - Admin: Protect Routes
+[tag]: # (@pytest.mark.test_admin_protect_routes_module1)
 
-Find the label with the text, _Slug_. In the _control_ `<div>` below, add a text field that has a name of `slug` and a class of `input`.
+A few last things, open the `cms/admin/__init__.py` file. Below the `admin_bp` variable, import `auth` from `cms.admin`. This placement is important.
 
-Find the label with the text, _Content_. In the _control_ `<div>` below, add a multi-line text field that has a name of `body` and a class of `textarea`.
-
-## Template - Type Dropdown
-@pytest.mark.test_template_type_dropdown_module2
-
-Still in `content_form.html` find the label with the content, _Type_. In the _control_ `<div>` below, add a dropdown that has a name of `type_id`. 
-
-The `types` template variable contains the `id` and `name` of each type in the database. We'll use this to create the `<option>`s of the dropdown. 
-
-In the dropdown use a `for` loop to cycle through the `types` variable, call the current type, `type`. 
-
-In the body of the loop add an `<option>` that has a `value` set to the `type.id`, and set the content to the `type.name`.
-
-In the `<option>` opening tag add this code: ```{{ 'selected' if (type.name == type_name) }}``` . This ensures the dropdown is populated correctly.
-
-## Template - Buttons
-@pytest.mark.test_template_buttons_module2
-
-Still in the `content_form.html` file, find the `<div>` towards the bottom that has a class of `is-grouped`. There are two nested _control_ `<div>`s. In the first, add a submit button that has a `value` of `Submit` and give it two classes, `button` and  `is-link`.
-
-In the second, add an anchor element that says `Cancel` and has two classes, `button` and `is-text`. In the `href` attribute use the `url_for()` function to point to the `admin.content` route. Make sure to also pass the `type` keyword argument set to `type_name`.
-
-## Create Route - Methods
-@pytest.mark.test_create_route_methods_module2
-
-The current `create` route that is found in `admin/__init__.py` is only setup for _GET_ requests. Allow _POST_ requests too by providing the correct keyword argument and values to the `create` route decorator.
-
-Now that we allow _POST_ requests, let's adapt the `create` route to gather the _POST_ data.
-
-First import `request` from `flask`. Then, in the `requested_type` `if` statement add a nested `if` that checks if the request method is _POST_. If so assign a new variable called `title` the data from the `title` form element.
-
-## Create Route - Form Data
-@pytest.mark.test_create_route_form_data_module2
-
-In the `if` that you just created, create three more variables `slug`, `type_id`, and `body`. Assign each variable the data from each respective form element.
-
-We are going to validate some of this form data on the server side, so set a new variable called `error` to `None`.
-
-## Create Route - Validate Data
-@pytest.mark.test_create_route_validate_data_module2
-
-The two values we are going to validate from the form are the `title` and the `type_id`. 
-
-In the _POST_ `if`, nest an `if elif` statement to first check if `title` is empty, then second check if `type_id` is empty. If either is empty set `error` to an appropriate message.
-
-## Create Route - Insert Data
-@pytest.mark.test_create_route_insert_data_module2
-
-Once the validation is completed we can check the value of `error` with an `if `statement. If `error` is still set to `None`, we can add the data we collected from the form to the database.  SQLAlchemy makes this really easy. We'll use the `Content` model class.
-
-In the `if` statement, create a variable called `content` and assign it a new `Content` instance. To the constructor pass in four keyword arguments `title`, `slug`, `type_id`, and `body`. Set each to the form variables with the same names.
-
-Now that we have the prepared data stored in `content` we can add it to the database. First, import `db` from `cms.admin.models`. Then, call `db.session.add()` and pass in `content`. This only adds the `content` object to the _session_, let's commit to the database with a call to `db.session.commit()`.
-
-## Create Route - Redirect
-@pytest.mark.test_create_route_redirect_module2
-
-Once the form data is committed to the database we can redirect the user back to the correct page in the admin dashboard.
-
-First, import the `redirect`, `url_for`, and `flash` methods from `flask`. Then on the line below the database commit, `return` a `redirect` that points the user back to the `admin.content` route. Pass in the current content `type` as a keyword argument to `url_for`. 
-
-We have to handle the case were there is an error. So, outside of the _error_ `if` we have been working in, but still inside the _POST_ `if`, `flash()` the `error`.
-
-# Module 3 - Edit Route
-
-## Edit Route - Function
-@pytest.mark.test_edit_route_module2
-
-At this point content can be created, however, it cannot be edited. Let's create a new route function in `admin/__init__.py` called `edit`. 
-
-Add a route decorator with a URL pattern of `/edit/<id>`. Make sure this new route allows _GET_ and _POST_ request. _Note: this route is part of our `admin_bp` blueprint._
-
-Our URL pattern has a placeholder for `id`. Make sure the `edit` function accepts this as well.
-
-When the user clicks the edit button it would be best if the form was populated with the correct content. 
-
-So, in the body, add a single line to pull the `content` stored in the database for the given `id`.  To do this `query` the `Content` model and use `get_or_404()` to get content for the specified `id`. Assign the result to a variable called `content`.
-
-## Edit Route - Queries
-@pytest.mark.test_edit_route_queries_module2
-
-As in the above step, we would like to populate the `content_form.html` with the type of content we are editing. So, _get()_ the `content.type_id` by _querying_
-the `Type` module, assign the result to a variable called `type`. 
-
-Get _all()_ of the types by _querying_
-the `Type` module, assign the result to a variable called `types`.
-
-## Edit Route - Render Template
-@pytest.mark.test_edit_route_render_template_module2
-
-Below the queries, `return` a call to `render_template()`. There are several values that we want to populate in the form, so, there is a lot to pass to the `render_template()` function. These values are listed below: 
-- `admin/content_form.html` _(template)_
-- `types` as `types`
-- `'Edit'` as `title`
-- `content.title` as `item_title` 
-- `content.slug` as `slug`
-- `type.name` as `type_name` 
-- `content.type_id` as `type_id`
-- `content.body` as `body`
-
-The name on the right is the template variable name.
-
-## Template - Populate Form Controls
-@pytest.mark.test_template_populate_form_controls_module2
-
-We are now ready to populate the form with data from the database.
-
-Open the `content_form.html` file and find the `title` text field and add a `value` attribute to the start tag, set it to the `item_title` template variable filtered with `default('')`.
-
-Find the `slug` text field and add a `value` attribute to the start tag, set it to the `slug` template variable filtered with `default('')`.
-
-Finally, find the `body` multi-line text field as the element content add the template variable `body` filtered with `default('')`.
-
-To hook everything together, open `content.html` and find the `Edit` anchor element. For the `href`, add a `url_for` function that points to the `admin.edit` route. Pass in a keyword argument of `id` set to `item.id`.
-
-## Edit Route - Form Data
-@pytest.mark.test_edit_route_form_data_module2
-
-Return back to the `cms/admin/__init__.py` file. Below the query statements, add an `if` that checks if the request method is _POST_. If so, assign all properties of the `content` object the correct form data. *Hint: content.title = request.form\['title'\]*. 
-
-There are no fields in our form for the `content.updated_at` property. Below the existing imports, import `datetime` from `datetime`. Then assign `content.updated_at` the current date with a call to `datetime.utcnow()`. 
-
-You should end up with 5 assignment statements that assign new values to the properties of the `content` object.
-
-As with the create route we are going to validate some of our form data on the server side, so, set a new variable called `error` to `None`.
-
-## Edit Route - Validate Data
-@pytest.mark.test_edit_route_validate_data_module2
-
-There is only one form value to validate because we are pulling in the `type` already.
-
-In the _POST_ `if`, nest an `if` statement to check if `title` is empty. If empty set `error` to an appropriate message.
-
-## Edit Route - Update Data
-@pytest.mark.test_edit_route_update_data_module2
-
-Once the validation is completed we can check the value of `error` with an `if `statement. If `error` is still `None`, we can update the data we have collected from the form in the database. 
-
-The data stored in `content` has already been updated. All we have to do is commit it with `db.session.commit()`.
-
-Once the form data is committed to the database we can redirect the user back to the correct page in the admin dashboard. On the line below the database commit, `return` a `redirect` that points the user back to the `admin.content` route. Pass in the current `type.name` as a keyword argument of `type` to `url_for()`.
-
-We have to handle the case where there is an error. So, outside of the _error_ `if` we have been working in, but still inside the _POST_ `if`, `flash()` the `error`. 
+Finally, protect all the routes in the admin blueprint with the `@auth.protected` custom decorator. This should include these routes: `content`, `create`, `edit`, `users` and `settings`.
