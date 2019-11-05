@@ -23,7 +23,6 @@ def load_user():
     user_id = session.get('user_id')
     g.user = User.query.get(user_id) if user_id is not None else None
 
-
 @admin_bp.route('/login', methods=('GET', 'POST'))
 def login():
     if request.method == 'POST':
@@ -42,9 +41,10 @@ def login():
             session.clear()
             session['user_id'] = user.id
             return redirect(url_for('admin.content', type='page'))
-
-        unauthorized.send(current_app._get_current_object(), user_id=user.id, username=user.username)
-        flash(error)
+        else:
+            unauthorized.send(current_app._get_current_object(), user_id=user.id, username=user.username)
+            flash(error)
+            return render_template('admin/login.html'), 401
 
     return render_template('admin/login.html')
 
