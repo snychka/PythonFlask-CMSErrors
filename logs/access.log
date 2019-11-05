@@ -1,0 +1,5 @@
+127.0.0.1 - - [05/Nov/2019 13:37:06] "GET / HTTP" 200 -
+127.0.0.1 - - [05/Nov/2019 13:37:08] "GET /admin/ HTTP" 302 -
+127.0.0.1 - - [05/Nov/2019 13:37:08] "GET /admin/login HTTP" 200 -
+Unauthorized: 05/Nov/2019 13:37:16 1 psdemo
+127.0.0.1 - - [05/Nov/2019 13:37:16] "POST /admin/login HTTP" 200 -

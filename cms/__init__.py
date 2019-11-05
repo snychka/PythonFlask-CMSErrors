@@ -1,6 +1,5 @@
 ## Imports
-from flask import Flask, render_template, abort
-
+from flask import Flask, render_template, abort, request
 from cms.admin.models import Content, Type, User, Setting, db
 from cms.admin import admin_bp
 #!
@@ -10,6 +9,8 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///{}/{}'.format(app.root_path, 'content.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'b2de7FkqvkMyqzNFzxCkgnPKIGP6i4Rc'
+
+from cms import handlers
 #!
 
 ## Models
@@ -31,10 +32,10 @@ def pluralize(string, end=None, rep=''):
 @app.route('/', defaults={'slug': 'home'})
 @app.route('/<slug>')
 def index(slug):
-    titles = Content.query.with_entities(Content.slug, Content.title).join(Type).filter(Type.name == 'page')
     content = Content.query.filter(Content.slug == slug).first_or_404()
-    return render_template('index.html', titles=titles, content=content)
-    
-if __name__ == "__main__":
-    app.run(debug=True)
+    return render_template('index.html', content=content)
+
+
+if __name__ == '__main__':
+    app.run()
 #!

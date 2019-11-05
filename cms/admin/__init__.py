@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, abort, request, redirect, url_for, flash, g
+from flask import has_request_context, request
 
 from cms.admin.models import Content, Type, User, Setting, db
 from datetime import datetime
