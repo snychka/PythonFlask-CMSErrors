@@ -32,9 +32,9 @@ def pluralize(string, end=None, rep=''):
 @app.route('/', defaults={'slug': 'home'})
 @app.route('/<slug>')
 def index(slug):
-    content = Content.query.filter(Content.slug == slug).first_or_404()
-    return render_template('index.html', content=content)
-
+    abort(500)
+    # content = Content.query.filter(Content.slug == slug).first_or_404()
+    # return render_template('index.html', content=content)
 
 if __name__ == '__main__':
     app.run()
