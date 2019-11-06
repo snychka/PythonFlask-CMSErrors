@@ -1,12 +1,12 @@
-from cms import app
-
 from flask import request, render_template
-from cms.admin.models import Content, Type
-from cms.admin import auth
 
-import logging
-import traceback
+from cms import app
+from cms.admin import auth
+from cms.admin.models import Content, Type
+
+from traceback import format_exc
 from time import strftime
+from logging import getLogger, INFO, WARN, ERROR
 from logging.handlers import RotatingFileHandler
 
 @app.context_processor
@@ -14,40 +14,40 @@ def inject_titles():
     titles = Content.query.with_entities(Content.slug, Content.title).join(Type).filter(Type.name == 'page')
     return dict(titles=titles)
 
-request_log = logging.getLogger('werkzeug')
+request_log = getLogger('werkzeug')
 request_log.disabled = True
 
-def configure_logging(name, level, path):
-    log = logging.getLogger(name)
+def configure_logging(name, level):
+    log = getLogger(name)
     log.setLevel(level)
-    handler = RotatingFileHandler(path, maxBytes=10240, backupCount=10)
+    handler = RotatingFileHandler('logs/{}.log'.format(name), maxBytes=5*1024*1024, backupCount=10)
     log.addHandler(handler)
     return log
 
 timestamp = strftime('[%d/%b/%Y %H:%M:%S]')
 
-@app.errorhandler(404)
-def page_not_found(e):
-    return render_template('not_found.html'), 404
-
-error_log = configure_logging('cms.error', logging.ERROR, 'logs/error.log')
-@app.errorhandler(Exception)
-def handle_exception(e):
-    tb = traceback.format_exc()
-    error_log.error('%s - - %s "%s %s %s" %s -\n%s', request.remote_addr, timestamp, request.method, request.path, request.scheme.upper(), tb)
-    original = getattr(e, 'original_exception', None)
-    if original is None:
-        return render_template('error.html'), 500
-    return render_template('error.html', error=original), 500
-
-unauthorized_log = configure_logging('auth.unauthorized', logging.WARN, 'logs/unauthorized.log')
-@auth.unauthorized.connect
-def log_unauthorized(app, user_id, username, **kwargs):
-    unauthorized_log.warning('Unauthorized: %s %s %s', timestamp, user_id, username)
-
-access_log = configure_logging('cms.access', logging.INFO, 'logs/access.log')
+access_log = configure_logging('access', INFO)
 @app.after_request
 def after_request(response):
     if int(response.status_code) < 400:
         access_log.info('%s - - %s "%s %s %s" %s -', request.remote_addr, timestamp, request.method, request.path, request.scheme.upper(), response.status_code)
     return response
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('not_found.html'), 404
+
+error_log = configure_logging('error', ERROR)
+@app.errorhandler(Exception)
+def handle_exception(e):
+    tb = format_exc()
+    error_log.error('%s - - %s "%s %s %s" 500 -\n%s', request.remote_addr, timestamp, request.method, request.path, request.scheme.upper(), tb)
+    original = getattr(e, 'original_exception', None)
+    if original is None:
+        return render_template('error.html'), 500
+    return render_template('error.html', error=original), 500
+
+unauthorized_log = configure_logging('unauthorized', WARN)
+@auth.unauthorized.connect
+def log_unauthorized(app, user_id, username, **kwargs):
+    unauthorized_log.warning('Unauthorized: %s %s %s', timestamp, user_id, username)

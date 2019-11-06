@@ -88,3 +88,7 @@ def users():
 def settings():
     settings = Setting.query.all()
     return render_template('admin/settings.html', title='Settings', settings=settings)
+
+@admin_bp.app_errorhandler(404)
+def page_not_found(e):
+    return render_template('admin/not_found.html'), 404
