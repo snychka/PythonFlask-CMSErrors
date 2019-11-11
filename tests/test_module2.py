@@ -14,7 +14,7 @@ admin = Path.cwd() / 'cms' / 'admin'
 admin_module = admin / '__init__.py'
 models = admin / 'models.py'
 auth = admin / 'auth.py'
-login_template = template_data('login')
+login_template = template_data('not_found')
 #!
 
 ## Module Functions
@@ -30,8 +30,8 @@ auth_code = get_source_code(auth)
 #!
 
 ## Tests
-@pytest.mark.test__module2
-def test_models__module2():
+@pytest.mark.test_inject_titles_module2
+def test_models_inject_titles_module2():
     # 01.
     # @app.context_processor
     # def inject_titles():
@@ -39,68 +39,68 @@ def test_models__module2():
     #     return dict(titles=titles)
     assert False
 
-@pytest.mark.test__module2
-def test_models__module2():
+@pytest.mark.test_not_found_template_module2
+def test_models_not_found_template_module2():
     # 02.
     # Create `templates/not_found.html`
     assert False
 
-@pytest.mark.test__module2
-def test_models__module2():
+@pytest.mark.test_not_found_handler_module2
+def test_models_not_found_handler_module2():
     # 03.
     # @app.errorhandler(404)
     # def page_not_found(e):
     #     return render_template('not_found.html'), 404
     assert False
 
-@pytest.mark.test__module2
-def test_models__module2():
+@pytest.mark.test_error_log_module2
+def test_models_error_log_module2():
     # 04.
     # error_log = configure_logging('error', ERROR)
     assert False
 
-@pytest.mark.test__module2
-def test_models__module2():
+@pytest.mark.test_error_handler_module2
+def test_models_error_handler_module2():
     # 05.
     # @app.errorhandler(Exception)
     # def handle_exception(e):
     #     tb = format_exc()
     assert False
 
-@pytest.mark.test__module2
-def test_models__module2():
+@pytest.mark.test_error_log_format_module2
+def test_models_error_log_format_module2():
     # 06.
     # error_log.error('%s - - %s "%s %s %s" 500 -\n%s', request.remote_addr, timestamp, request.method, request.path, request.scheme.upper(), tb)
     assert False
 
-@pytest.mark.test__module2
-def test_models__module2():
+@pytest.mark.test_error_template_module2
+def test_models_error_template_module2():
     # 07.
     # Create `templates/error.html`
     assert False
 
-@pytest.mark.test__module2
-def test_models__module2():
+@pytest.mark.test_render_original_error_template_module2
+def test_models_render_original_error_template_module2():
     # 08.
-    # original = getattr(e, 'original_exception', None) # TASK(M02T08) 
-    # return render_template('error.html', error=original), 500 # TASK(M02T08)
+    # original = getattr(e, 'original_exception', None)
+    # return render_template('error.html', error=original), 500
     assert False
 
-@pytest.mark.test__module2
-def test_models__module2():
+@pytest.mark.test_render_simple_error_template_module2
+def test_models_render_simple_error_template_module2():
     # 09.
     # if original is None:
     #     return render_template('error.html'), 500
     assert False
 
-@pytest.mark.test__module2
-def test_models__module2():
+@pytest.mark.test_admin_blueprint_error_template_module2
+def test_models_admin_blueprint_error_template_module2():
     # 10.
     # Create `admin/templates/admin/not_found.html`
     assert False
 
-@pytest.mark.test__module2
-def test_models__module2():
+@pytest.mark.test_render_admin_blueprint_error_template_module2
+def test_models_render_admin_blueprint_error_template_module2():
     # 11.
     # @admin_bp.app_errorhandler(404)
     # def page_not_found(e):

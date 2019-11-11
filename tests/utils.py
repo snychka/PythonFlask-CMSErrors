@@ -2,16 +2,12 @@ import re
 from bs4 import BeautifulSoup
 from jinja2 import Environment, PackageLoader, exceptions, meta, nodes
 
-env = Environment(loader=PackageLoader('cms', '/admin/templates/admin'))
-
-def template_source(name):
+def parsed_content(name, path='/admin/templates/admin'):
     try:
-        return env.loader.get_source(env, name + '.html')[0]
+        env = Environment(loader=PackageLoader('cms', path))
+        return env.parse(env.loader.get_source(env, name + '.html')[0])
     except exceptions.TemplateNotFound:
         return None
-
-def parsed_content(name):
-    return env.parse(template_source(name))
 
 def template_data(name):
     html = ''

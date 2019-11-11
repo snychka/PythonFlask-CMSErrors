@@ -30,46 +30,46 @@ auth_code = get_source_code(auth)
 #!
 
 ## Tests
-@pytest.mark.test__module3
-def test_models__module3():
+@pytest.mark.test_namespace_module3
+def test_models_namespace_module3():
     # 01.
-    # from blinker import Namespace # TASK(M03T01)
-    # _signals = Namespace() # TASK(M03T01)
+    # from blinker import Namespace
+    # _signals = Namespace()
     assert False
 
-@pytest.mark.test__module3
-def test_models__module3():
+@pytest.mark.test_unauthorized_signal_module3
+def test_models_unauthorized_signal_module3():
     # 02.
     # unauthorized = _signals.signal('unauthorized')
     assert False
 
-@pytest.mark.test__module3
-def test_models__module3():
+@pytest.mark.test_send_unauthorized_signal_module3
+def test_models_send_unauthorized_signal_module3():
     # 03.
     # unauthorized.send(current_app._get_current_object(), user_id=user.id, username=user.username)
     assert False
 
-@pytest.mark.test__module3
-def test_models__module3():
+@pytest.mark.test_import_unauthorized_signal_module3
+def test_models_import_unauthorized_signal_module3():
     # 04.
     # from cms.admin.auth import unauthorized
     assert False
 
-@pytest.mark.test__module3
-def test_models__module3():
+@pytest.mark.test_unauthorized_log_module3
+def test_models_unauthorized_log_module3():
     # 05.
     # unauthorized_log = configure_logging('unauthorized', WARN)
     assert False
 
-@pytest.mark.test__module3
-def test_models__module3():
+@pytest.mark.test_unauthorized_log_format_module3
+def test_models_unauthorized_log_format_module3():
     # 06.
     # def log_unauthorized(app, user_id, username, **kwargs): # TASK(M03T06)
     #     unauthorized_log.warning('Unauthorized: %s %s %s', timestamp, user_id, username)
     assert False
 
-@pytest.mark.test__module3
-def test_models__module3():
+@pytest.mark.test_connect_decorator_module3
+def test_models_connect_decorator_module3():
     # 07.
     # @unauthorized.connect
     assert False
