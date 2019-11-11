@@ -2,7 +2,6 @@
 from flask import request, render_template
 
 from cms import app
-from cms.admin import auth
 from cms.admin.models import Content, Type
 #!
 
@@ -11,6 +10,8 @@ from logging.handlers import RotatingFileHandler # TASK(M01T03)
 from time import strftime # TASK(M01T05)
 from logging import INFO, WARN, ERROR # TASK(M01T06)
 from traceback import format_exc # TASK(M02T05)
+
+from cms.admin.auth import unauthorized # TASK(M03T04)
 
 # TASK(M01T01)
 request_log = getLogger('werkzeug')
@@ -69,8 +70,8 @@ def handle_exception(e): # TASK(M02T05)
     #/
     return render_template('error.html', error=original), 500 # TASK(M02T08)
 
-# TASK(M03T04)
+# TASK(M03T05)
 unauthorized_log = configure_logging('unauthorized', WARN)
-@auth.unauthorized.connect # TASK(M03T06)
-def log_unauthorized(app, user_id, username, **kwargs): # TASK(M03T05)
+@unauthorized.connect # TASK(M03T07)
+def log_unauthorized(app, user_id, username, **kwargs): # TASK(M03T06)
     unauthorized_log.warning('Unauthorized: %s %s %s', timestamp, user_id, username)

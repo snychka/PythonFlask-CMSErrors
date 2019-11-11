@@ -25,7 +25,7 @@ In the body of `check_password` return a call to the `check_password_hash` funct
 ## 1.3 - Database Migration
 [tag]: # (@pytest.mark.test_database_migration_module1)
 
-There is currently no database for the application. Let's create one and migrate the new scheme that includes our new `password` column. Open a terminal, command propmt, or powershell and `cd` to the root folder of the project.
+There is currently no database for the application. Let's create one and migrate the new scheme that includes our new `password` column. Open a terminal, command prompt, or powershell, and `cd` to the root folder of the project.
 
 The `Flask-Migrate` extension should be installed. This exenstion provides several `flask db` commands.
 
