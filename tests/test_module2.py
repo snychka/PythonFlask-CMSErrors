@@ -92,18 +92,3 @@ def test_models_render_simple_error_template_module2():
     # if original is None:
     #     return render_template('error.html'), 500
     assert False
-
-@pytest.mark.test_admin_blueprint_error_template_module2
-def test_models_admin_blueprint_error_template_module2():
-    # 10.
-    # Create `admin/templates/admin/not_found.html`
-    assert False
-
-@pytest.mark.test_render_admin_blueprint_error_template_module2
-def test_models_render_admin_blueprint_error_template_module2():
-    # 11.
-    # @admin_bp.app_errorhandler(404)
-    # def page_not_found(e):
-    #     return render_template('admin/not_found.html'), 404
-    assert False
-#!
