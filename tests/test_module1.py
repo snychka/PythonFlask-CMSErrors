@@ -66,8 +66,8 @@ def test_models_timestamp_module1():
     # timestamp = strftime('[%d/%b/%Y %H:%M:%S]')
     assert False
 
-@pytest.mark.test_access_logger_module1
-def test_modelsaccess_logger__module1():
+@pytest.mark.test_access_log_module1
+def test_modelsaccess_log__module1():
     # 06.
     # from logging import INFO, WARN, ERROR
     # access_log = configure_logging('access', INFO)

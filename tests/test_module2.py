@@ -54,7 +54,7 @@ def test_models_not_found_handler_module2():
     assert False
 
 @pytest.mark.test_error_log_module2
-def test_models_error_log_module2():
+def test_error_log_module2():
     # 04.
     # error_log = configure_logging('error', ERROR)
     assert False
