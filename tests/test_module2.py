@@ -32,7 +32,7 @@ auth_code = get_source_code(auth)
 ## Tests
 @pytest.mark.test_inject_titles_module2
 def test_models_inject_titles_module2():
-    # 01.
+    # 01. Inject Titles
     # @app.context_processor
     # def inject_titles():
     #     titles = Content.query.with_entities(Content.slug, Content.title).join(Type).filter(Type.name == 'page')
@@ -41,13 +41,13 @@ def test_models_inject_titles_module2():
 
 @pytest.mark.test_not_found_template_module2
 def test_models_not_found_template_module2():
-    # 02.
+    # 02. Not Found Template
     # Create `templates/not_found.html`
     assert False
 
 @pytest.mark.test_not_found_handler_module2
 def test_models_not_found_handler_module2():
-    # 03.
+    # 03. Not Found Handler
     # @app.errorhandler(404)
     # def page_not_found(e):
     #     return render_template('not_found.html'), 404
@@ -55,13 +55,13 @@ def test_models_not_found_handler_module2():
 
 @pytest.mark.test_error_log_module2
 def test_error_log_module2():
-    # 04.
+    # 04. Error Log
     # error_log = configure_logging('error', ERROR)
     assert False
 
 @pytest.mark.test_error_handler_module2
 def test_models_error_handler_module2():
-    # 05.
+    # 05. Error Handler
     # @app.errorhandler(Exception)
     # def handle_exception(e):
     #     tb = format_exc()
@@ -69,26 +69,26 @@ def test_models_error_handler_module2():
 
 @pytest.mark.test_error_log_format_module2
 def test_models_error_log_format_module2():
-    # 06.
+    # 06. Error Log Format
     # error_log.error('%s - - %s "%s %s %s" 500 -\n%s', request.remote_addr, timestamp, request.method, request.path, request.scheme.upper(), tb)
     assert False
 
 @pytest.mark.test_error_template_module2
 def test_models_error_template_module2():
-    # 07.
+    # 07. Error Template
     # Create `templates/error.html`
     assert False
 
 @pytest.mark.test_render_original_error_template_module2
 def test_models_render_original_error_template_module2():
-    # 08.
+    # 08. Render Original Error Template
     # original = getattr(e, 'original_exception', None)
     # return render_template('error.html', error=original), 500
     assert False
 
 @pytest.mark.test_render_simple_error_template_module2
 def test_models_render_simple_error_template_module2():
-    # 09.
+    # 09. Render Simple Error Template
     # if original is None:
     #     return render_template('error.html'), 500
     assert False

@@ -31,7 +31,7 @@ auth_code = get_source_code(auth)
 ## Tests
 @pytest.mark.test_disable_werkzeug_logging_module1
 def test_disable_werkzeug_logging_module1():
-    # 01.
+    # 01. Disable Werkzeug Logging
     # from logging import getLogger
     # request_log = getLogger('werkzeug')
     # request_log.disabled = True
@@ -39,7 +39,7 @@ def test_disable_werkzeug_logging_module1():
 
 @pytest.mark.test_configure_logging_module1
 def test_models_configure_logging_module1():
-    # 02.
+    # 02. Configure Logging
     # def configure_logging(name, level):
     #     log = getLogger(name)
     #     log.setLevel(level)
@@ -47,35 +47,35 @@ def test_models_configure_logging_module1():
 
 @pytest.mark.test_rotating_file_handler_module1
 def test_models_rotating_file_handler_module1():
-    # 03.
+    # 03. Rotate File Handler
     # from logging.handlers import RotatingFileHandler
     # handler = RotatingFileHandler('logs/{}.log'.format(name), maxBytes=5*1024*1024, backupCount=10)
     assert False
 
 @pytest.mark.test_add_handler_module1
 def test_models_add_handler_module1():
-    # 04.
+    # 04. Add Log Handler
     # log.addHandler(handler)
     # return log
     assert False
 
 @pytest.mark.test_timestamp_module1
 def test_models_timestamp_module1():
-    # 05.
+    # 05. Timestamp Formatting
     # from time import strftime
     # timestamp = strftime('[%d/%b/%Y %H:%M:%S]')
     assert False
 
 @pytest.mark.test_access_log_module1
 def test_modelsaccess_log__module1():
-    # 06.
+    # 06. Access Log
     # from logging import INFO, WARN, ERROR
     # access_log = configure_logging('access', INFO)
     assert False
 
 @pytest.mark.test_after_request_module1
 def test_models_after_request_module1():
-    # 07.
+    # 07. After Request
     # @app.after_request
     # def after_request(response):
     #     return response
@@ -83,13 +83,13 @@ def test_models_after_request_module1():
 
 @pytest.mark.test_access_log_format_module1
 def test_models_access_log_format_module1():
-    # 08.
+    # 08. Access Log Format
     # access_log.info('%s - - %s "%s %s %s" %s -', request.remote_addr, timestamp, request.method, request.path, request.scheme.upper(), response.status_code)
     assert False
 
 @pytest.mark.test_valid_status_codes_module1
 def test_models_valid_status_codes_module1():
-    # 09.
+    # 09. Valid Status Codes
     # if int(response.status_code) < 400:
     assert False
 #!
