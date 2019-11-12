@@ -10,10 +10,8 @@ from tests.utils import *
 #!
 
 ## Paths
-admin = Path.cwd() / 'cms' / 'admin'
-admin_module = admin / '__init__.py'
-models = admin / 'models.py'
-auth = admin / 'auth.py'
+handlers = Path.cwd() / 'cms' / 'handlers.py'
+auth = Path.cwd() / 'cms' / 'admin' / 'auth.py'
 #!
 
 ## Module Functions
@@ -23,8 +21,7 @@ def get_source_code(file_path):
 #!
 
 ## Source Code
-admin_module_code = get_source_code(admin_module)
-models_code = get_source_code(models)
+handlers_code = get_source_code(handlers)
 auth_code = get_source_code(auth)
 #!
 
@@ -35,8 +32,46 @@ def test_disable_werkzeug_logging_module1():
     # from logging import getLogger
     # request_log = getLogger('werkzeug')
     # request_log.disabled = True
-    assert False
+    logging_import = get_imports(handlers_code, 'logging')
+    logging_import_exits = logging_import is not None
+    assert logging_import_exits, \
+        'Do you have a `werkzeug.security` import statement?'
+    get_logger_exists = 'getLogger' in logging_import
+    assert get_logger_exists, \
+        'Are you importing `getLogger` from `logging` in `cms/handlers.py`?'
 
+    request_log = handlers_code.find('assign', lambda node: node.target.value == 'request_log')
+    request_log_exists = request_log is not None
+    assert request_log_exists, \
+        'Are you setting the `user_id` variable correctly?'
+    get_call = request_log.find('atomtrailers', lambda node: \
+        node.value[0].value == 'getLogger' and \
+        node.value[1].type == 'call'
+        )
+    get_call_exists = get_call is not None
+    assert get_call_exists, \
+        'Are you calling the `getLogger()` function and assigning the result to `request_log`?'
+    get_argument = get_call.find('call_argument', lambda node: \
+        str(node.value.value).replace("'", '"') == '"werkzeug"'  
+    ) is not None
+    assert get_argument, \
+        'Are you passing the `getLogger()` function the correct argument?'
+
+
+    request_log_disabled = handlers_code.find('assign', lambda node: \
+        # node.target.find('atomtrailers', lambda node: \
+        #     node.value[0].value == 'request_log' and \
+        #     node.value[1].value == 'disabled'
+        # ) and \
+        print(type(node.value))
+    )
+    print(request_log_disabled)
+    # request_log_disabled_exists = request_log_disabled is not None
+    # assert request_log_disabled_exists, \
+    #     'Have you set the `disabled` property on `request_log` to `True`?'
+
+    assert False
+'''
 @pytest.mark.test_configure_logging_module1
 def test_models_configure_logging_module1():
     # 02. Configure Logging
@@ -93,3 +128,4 @@ def test_models_valid_status_codes_module1():
     # if int(response.status_code) < 400:
     assert False
 #!
+'''

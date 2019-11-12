@@ -14,7 +14,7 @@ admin = Path.cwd() / 'cms' / 'admin'
 admin_module = admin / '__init__.py'
 models = admin / 'models.py'
 auth = admin / 'auth.py'
-login_template = template_data('login')
+# login_template = template_data('login')
 #!
 
 ## Module Functions
@@ -29,6 +29,7 @@ models_code = get_source_code(models)
 auth_code = get_source_code(auth)
 #!
 
+'''
 ## Tests
 @pytest.mark.test_namespace_module3
 def test_models_namespace_module3():
@@ -74,3 +75,4 @@ def test_models_connect_decorator_module3():
     # @unauthorized.connect
     assert False
 #!
+'''
