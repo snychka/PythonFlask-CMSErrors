@@ -1,4 +1,0 @@
-127.0.0.1 - - [12/Nov/2019 14:26:18] "GET / HTTP" 200 -
-127.0.0.1 - - [12/Nov/2019 14:26:18] "GET /static/css/bulma.min.css HTTP" 200 -
-127.0.0.1 - - [12/Nov/2019 14:26:18] "GET /static/css/theme.css HTTP" 200 -
-127.0.0.1 - - [12/Nov/2019 14:26:18] "GET /static/css/admin/dashboard.css HTTP" 200 -
