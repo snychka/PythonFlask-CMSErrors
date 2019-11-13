@@ -29,12 +29,12 @@ def login():
         username = request.form['username']
         password = request.form['password']
         error = None
+
         user = User.query.filter_by(username=username).first()
-        check = user.check_password(password)
 
         if user is None:
             error = 'Incorrect username.'
-        elif not check:
+        elif not user.check_password(password):
             error = 'Incorrect password.'
 
         if error is None:
