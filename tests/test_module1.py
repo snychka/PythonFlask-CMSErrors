@@ -57,36 +57,90 @@ def test_disable_werkzeug_logging_module1():
     assert get_argument, \
         'Are you passing the `getLogger()` function the correct argument?'
 
-
     request_log_disabled = handlers_code.find('assign', lambda node: \
-        # node.target.find('atomtrailers', lambda node: \
-        #     node.value[0].value == 'request_log' and \
-        #     node.value[1].value == 'disabled'
-        # ) and \
-        print(type(node.value))
-    )
-    print(request_log_disabled)
-    # request_log_disabled_exists = request_log_disabled is not None
-    # assert request_log_disabled_exists, \
-    #     'Have you set the `disabled` property on `request_log` to `True`?'
+        node.target.find('atomtrailers', lambda node: \
+            node.value[0].value == 'request_log' and \
+            node.value[1].value == 'disabled') and \
+        node.value.value == 'True') is not None
 
-    assert False
-'''
+    assert request_log_disabled, \
+        'Have you set the `disabled` property on `request_log` to `True`?'
+
+
 @pytest.mark.test_configure_logging_module1
 def test_models_configure_logging_module1():
     # 02. Configure Logging
     # def configure_logging(name, level):
     #     log = getLogger(name)
     #     log.setLevel(level)
-    assert False
+    def_configure_logging = handlers_code.find('def', lambda node: \
+        node.name == 'configure_logging' and \
+        node.arguments[0].target.value == 'name' and \
+        node.arguments[1].target.value == 'level')
+    def_configure_logging_exists = def_configure_logging is not None
+    assert def_configure_logging_exists, \
+        'Have you created a function at the top of `handlers.py` called `configure_logging`? Do you have the correct parameters?'
+
+    log = def_configure_logging.find('assign', lambda node: node.target.value == 'log')
+    log_exists = log is not None
+    assert log_exists, \
+        'Are you setting the `log` variable correctly?'
+    get_call = log.find('atomtrailers', lambda node: \
+        node.value[0].value == 'getLogger' and \
+        node.value[1].type == 'call'
+        )
+    get_call_exists = get_call is not None
+    assert get_call_exists, \
+        'Are you calling the `getLogger()` function and assigning the result to `log`?'
+    get_argument = get_call.find('call_argument', lambda node: \
+        str(node.value.value) == 'name') is not None
+    assert get_argument, \
+        'Are you passing the `getLogger()` function the correct argument?'
+
+    level_call = def_configure_logging.find('atomtrailers', lambda node: \
+        node.value[0].value == 'log' and \
+        node.value[1].value == 'setLevel' and \
+        node.value[2].type == 'call'
+        )
+    level_call_exists = level_call is not None
+    assert level_call_exists, \
+        'Are you calling the `log.setLevel()` function?'
+    level_argument = level_call.find('call_argument', lambda node: \
+        str(node.value.value) == 'level') is not None
+    assert level_argument, \
+        'Are you passing the `log.setLevel()` function the correct argument?'
 
 @pytest.mark.test_rotating_file_handler_module1
 def test_models_rotating_file_handler_module1():
     # 03. Rotate File Handler
     # from logging.handlers import RotatingFileHandler
     # handler = RotatingFileHandler('logs/{}.log'.format(name), maxBytes=5*1024*1024, backupCount=10)
+    handler_import = get_imports(handlers_code, 'logging.handlers')
+    handler_import_exits = handler_import is not None
+    assert handler_import_exits, \
+        'Do you have a `werkzeug.security` import statement?'
+    rotating_file_exists = 'RotatingFileHandler' in handler_import
+    assert rotating_file_exists, \
+        'Are you importing `RotatingFileHandler` from `logging.handlers` in `cms/handlers.py`?'
+
+    handler = handlers_code.find('assign', lambda node: node.target.value == 'handler')
+    handler_exists = handler is not None
+    assert handler_exists, \
+        'Are you setting the `handler` variable correctly?'
+    rotating_file_call = handler.find('atomtrailers', lambda node: \
+        node.value[0].value == 'RotatingFileHandler' and \
+        node.value[1].type == 'call'
+        )
+    rotating_file_call_exists = rotating_file_call is not None
+    assert rotating_file_call_exists, \
+        'Are you calling the `getLogger()` function and assigning the result to `request_log`?'
+    rotating_file_arguments = rotating_file_call.find_all('call_argument')
+
+    rotating_file_arguments[0].help()
+
     assert False
 
+'''
 @pytest.mark.test_add_handler_module1
 def test_models_add_handler_module1():
     # 04. Add Log Handler
