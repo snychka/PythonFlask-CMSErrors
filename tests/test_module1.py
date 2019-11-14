@@ -205,14 +205,14 @@ def test_models_timestamp_module1():
     timestamp = handlers_code.find('assign', lambda node: node.target.value == 'timestamp')
     timestamp_exists = timestamp is not None
     assert timestamp_exists, \
-        'Are you setting the `log` variable correctly?'
+        'Are you setting the `timestamp` variable correctly?'
     strftime_call = timestamp.find('atomtrailers', lambda node: \
         node.value[0].value == 'strftime' and \
         node.value[1].type == 'call'
         )
     strftime_call_exists = strftime_call is not None
     assert strftime_call_exists, \
-        'Are you calling the `getLogger()` function and assigning the result to `log`?'
+        'Are you calling the `strftime()` function and assigning the result to `timestamp`?'
     strftime_argument = strftime_call.find('call_argument', lambda node: \
         str(node.value.value).replace("'", '"') == '"[%d/%b/%Y %H:%M:%S]"') is not None
     assert strftime_argument, \

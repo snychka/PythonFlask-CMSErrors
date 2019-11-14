@@ -169,7 +169,6 @@ def test_models_error_handler_module2():
     # @app.errorhandler(Exception)
     # def handle_exception(e):
     #     tb = format_exc()
-
     traceback_import = get_imports(handlers_code, 'traceback')
     traceback_import_exits = traceback_import is not None
     assert traceback_import_exits, \
@@ -181,6 +180,9 @@ def test_models_error_handler_module2():
     def_handle_exception = handlers_code.find('def', lambda node: \
         node.name == 'handle_exception' and \
         node.arguments[0].target.value == 'e')
+    def_handle_exception_exists = def_handle_exception is not None
+    assert def_handle_exception_exists, \
+        'Have you created a function called `handle_exception` with a parameter of `e`?'
 
     decorator = def_handle_exception.find('decorator', lambda node: node.find('dotted_name', lambda node: \
           node.value[0].value == 'app' and \
@@ -192,14 +194,67 @@ def test_models_error_handler_module2():
     assert decorator_exists, \
         'The `page_not_found` function should have a decorator of `@app.errorhandler(Exception)`.'
 
+    tb = def_handle_exception.find('assign', lambda node: node.target.value == 'tb')
+    tb_exists = tb is not None
+    assert tb_exists, \
+        'Are you setting the `tb` variable correctly?'
+    format_exc_call = tb.find('atomtrailers', lambda node: \
+        node.value[0].value == 'format_exc' and \
+        node.value[1].type == 'call'
+        )
+    format_exc_call_exists = format_exc_call is not None
+    assert format_exc_call_exists, \
+        'Are you calling the `format_exc_call()` function and assigning the result to `tb`?'
 
-'''
 @pytest.mark.test_error_log_format_module2
 def test_models_error_log_format_module2():
     # 06. Error Log Format
     # error_log.error('%s - - %s "%s %s %s" 500 -\n%s', request.remote_addr, timestamp, request.method, request.path, request.scheme.upper(), tb)
+    # info_call = after_request.find('atomtrailers', lambda node: \
+    #     node.value[0].value == 'access_log' and \
+    #     node.value[1].value == 'info' and \
+    #     node.value[2].type == 'call')
+    # info_call_exists = info_call is not None
+    # assert info_call_exists, \
+    #     'Are you calling the `access_log.info()` function?'
+
+    # info_args = get_args(info_call[-1], False)
+
+    # arg_count = len(info_args) == 7
+    # assert arg_count, \
+    #     'Are you passing the correct number of arguments to `access_log.info()`?'
+
+    # first_arg = info_args[0] == '\'%s - - %s "%s %s %s" %s -\'' 
+    # assert first_arg, \
+    #     'Are you passing the correct log format to `access_log.info()` as the first argument?'
+
+    # second_arg = info_args[1] == 'request.remote_addr' 
+    # assert second_arg, \
+    #     'Are you passing the `request.remote_addr` to `access_log.info()` as the second argument?'
+
+    # third_arg = info_args[2] == 'timestamp' 
+    # assert third_arg, \
+    #     'Are you passing `timestamp` to `access_log.info()` as the third argument?'
+
+    # fourth_arg = info_args[3] == 'request.method' 
+    # assert fourth_arg, \
+    #     'Are you passing `request.method` to `access_log.info()` as the fourth argument?'
+
+    # fifth_arg = info_args[4] == 'request.path' 
+    # assert fifth_arg, \
+    #     'Are you passing `request.path` to `access_log.info()` as the fifth argument?'
+
+    # sixth_arg = info_args[5] == 'request.scheme.upper()' 
+    # assert sixth_arg, \
+    #     'Are you passing `request.scheme.upper()` to `access_log.info()` as the sixth argument?'
+
+    # seventh_arg = info_args[6] == 'response.status_code' 
+    # assert seventh_arg, \
+    #     'Are you passing `response.status_code` to `access_log.info()` as the seventh argument?'
+
     assert False
 
+'''
 @pytest.mark.test_error_template_module2
 def test_models_error_template_module2():
     # 07. Error Template
