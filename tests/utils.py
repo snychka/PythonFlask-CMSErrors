@@ -2,6 +2,8 @@ import re
 from bs4 import BeautifulSoup
 from jinja2 import Environment, PackageLoader, exceptions, meta, nodes
 
+from redbaron import RedBaron
+
 def parsed_content(name, path='/admin/templates/admin'):
     try:
         env = Environment(loader=PackageLoader('cms', path))
@@ -183,5 +185,16 @@ def get_form_data(code, route, values, name):
         node.value[3].find('string', lambda node: str(node.value).replace("'", '"') == name_as_string)) is not None
     
     assert right or right_get, \
-        'Are you setting the `{}` varaible to the correct form data?'.format(name)
+        'Are you setting the `{}` variable to the correct form data?'.format(name)
 
+def get_args(nodes, rq=True):
+    args = []
+    for node in nodes:
+        if node.target is None:
+            if rq:
+                args.append(str(node.value).replace("'", '"').replace(' ', ''))
+            else:
+                args.append(str(node.value))
+        else:
+            args.append('{}:{}'.format(node.target.value, str(node.value)))
+    return args

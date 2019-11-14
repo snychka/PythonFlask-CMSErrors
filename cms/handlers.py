@@ -22,7 +22,7 @@ def configure_logging(name, level):
     log = getLogger(name)
     log.setLevel(level)
     # TASK(M01T03)
-    handler = RotatingFileHandler('logs/{}.log'.format(name), maxBytes=5*1024*1024, backupCount=10)
+    handler = RotatingFileHandler('logs/{}.log'.format(name), maxBytes=1024*1024, backupCount=10)
     # TASK(M01T04)
     log.addHandler(handler)
     return log

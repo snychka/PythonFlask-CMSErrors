@@ -114,16 +114,24 @@ def test_models_configure_logging_module1():
 def test_models_rotating_file_handler_module1():
     # 03. Rotate File Handler
     # from logging.handlers import RotatingFileHandler
-    # handler = RotatingFileHandler('logs/{}.log'.format(name), maxBytes=5*1024*1024, backupCount=10)
+    # handler = RotatingFileHandler('logs/{}.log'.format(name), maxBytes=1024*1024, backupCount=10)
+    def_configure_logging = handlers_code.find('def', lambda node: \
+        node.name == 'configure_logging' and \
+        node.arguments[0].target.value == 'name' and \
+        node.arguments[1].target.value == 'level')
+    def_configure_logging_exists = def_configure_logging is not None
+    assert def_configure_logging_exists, \
+        'Have you created a function at the top of `handlers.py` called `configure_logging`? Do you have the correct parameters?'
+
     handler_import = get_imports(handlers_code, 'logging.handlers')
     handler_import_exits = handler_import is not None
     assert handler_import_exits, \
-        'Do you have a `werkzeug.security` import statement?'
+        'Do you have a `logging.handlers` import statement?'
     rotating_file_exists = 'RotatingFileHandler' in handler_import
     assert rotating_file_exists, \
         'Are you importing `RotatingFileHandler` from `logging.handlers` in `cms/handlers.py`?'
 
-    handler = handlers_code.find('assign', lambda node: node.target.value == 'handler')
+    handler = def_configure_logging.find('assign', lambda node: node.target.value == 'handler')
     handler_exists = handler is not None
     assert handler_exists, \
         'Are you setting the `handler` variable correctly?'
@@ -134,33 +142,131 @@ def test_models_rotating_file_handler_module1():
     rotating_file_call_exists = rotating_file_call is not None
     assert rotating_file_call_exists, \
         'Are you calling the `getLogger()` function and assigning the result to `request_log`?'
-    rotating_file_arguments = rotating_file_call.find_all('call_argument')
 
-    rotating_file_arguments[0].help()
+    rotating_file_args = get_args(rotating_file_call[1])
 
-    assert False
+    arg_count = len(rotating_file_args) == 3
+    assert arg_count, \
+        'Are you passing the correct number of keyword arguments to `RotatingFileHandler()`?'
 
-'''
+    first_arg = rotating_file_args[0] == '"logs/{}.log".format(name)'
+    assert first_arg, \
+        'Are you passing the correct path to the `RotatingFileHandler`?'
+
+    max_bytes_exists = 'maxBytes:1024*1024' in rotating_file_args
+    assert max_bytes_exists, \
+        'Are you passing a `maxBytes` keyword argument set to `1024*1024`?'
+
+    backup_count_exists = 'backupCount:10' in rotating_file_args
+    assert backup_count_exists, \
+        'Are you passing a `backupCount` keyword argument set to `10`?'
+
+
 @pytest.mark.test_add_handler_module1
 def test_models_add_handler_module1():
     # 04. Add Log Handler
     # log.addHandler(handler)
     # return log
-    assert False
+    def_configure_logging = handlers_code.find('def', lambda node: \
+        node.name == 'configure_logging' and \
+        node.arguments[0].target.value == 'name' and \
+        node.arguments[1].target.value == 'level')
+    add_handler_call = def_configure_logging.find('atomtrailers', lambda node: \
+        node.value[0].value == 'log' and \
+        node.value[1].value == 'addHandler' and \
+        node.value[2].type == 'call'
+        )
+    add_handler_call_exists = add_handler_call is not None
+    assert add_handler_call_exists, \
+        'Are you calling the `log.setLevel()` function?'
+    add_handler_argument = add_handler_call.find('call_argument', lambda node: \
+        str(node.value.value) == 'handler') is not None
+    assert add_handler_argument, \
+        'Are you passing the `log.setLevel()` function the correct argument?'
+
+    return_log = def_configure_logging.find('return')
+    return_log_exists = return_log is not None and return_log.value.value == 'log'
+    assert return_log_exists, \
+        'Are you returning `log` from the `configure_logging` function?'
 
 @pytest.mark.test_timestamp_module1
 def test_models_timestamp_module1():
     # 05. Timestamp Formatting
     # from time import strftime
     # timestamp = strftime('[%d/%b/%Y %H:%M:%S]')
-    assert False
+    time_import = get_imports(handlers_code, 'time')
+    time_import_exits = time_import is not None
+    assert time_import_exits, \
+        'Do you have a `time` import statement?'
+    rotating_file_exists = 'strftime' in time_import
+    assert rotating_file_exists, \
+        'Are you importing `strftime` from `time` in `cms/handlers.py`?'
+
+    timestamp = handlers_code.find('assign', lambda node: node.target.value == 'timestamp')
+    timestamp_exists = timestamp is not None
+    assert timestamp_exists, \
+        'Are you setting the `log` variable correctly?'
+    strftime_call = timestamp.find('atomtrailers', lambda node: \
+        node.value[0].value == 'strftime' and \
+        node.value[1].type == 'call'
+        )
+    strftime_call_exists = strftime_call is not None
+    assert strftime_call_exists, \
+        'Are you calling the `getLogger()` function and assigning the result to `log`?'
+    strftime_argument = strftime_call.find('call_argument', lambda node: \
+        str(node.value.value).replace("'", '"') == '"[%d/%b/%Y %H:%M:%S]"') is not None
+    assert strftime_argument, \
+        'Are you passing `strftime()` the correct format string?'
 
 @pytest.mark.test_access_log_module1
 def test_modelsaccess_log__module1():
     # 06. Access Log
     # from logging import INFO, WARN, ERROR
     # access_log = configure_logging('access', INFO)
-    assert False
+    logging_import = get_imports(handlers_code, 'logging')
+    logging_import_exists = logging_import is not None
+    assert logging_import_exists, \
+        'Do you have an import from `logging` statement?'
+
+    logging_import_info = 'INFO' in logging_import
+    assert logging_import_info, \
+        'Are you importing `INFO` from `logging` in `cms/handlers.py`?'
+
+    logging_import_warn = 'WARN' in logging_import
+    assert logging_import_warn, \
+        'Are you importing `WARN` from `logging` in `cms/handlers.py`?'
+
+    logging_import_error = 'ERROR' in logging_import
+    assert logging_import_error, \
+        'Are you importing `ERROR` from `logging` in `cms/handlers.py`?'
+
+    access_log = handlers_code.find('assign', lambda node: node.target.value == 'access_log')
+    access_log_exists = access_log is not None
+    assert access_log_exists, \
+        'Are you setting the `access_log` variable correctly?'
+
+    configure_logging_call = handlers_code.find('atomtrailers', lambda node: \
+        node.value[0].value == 'configure_logging' and \
+        node.value[1].type == 'call'
+        )
+    configure_logging_call_exists = configure_logging_call is not None
+    assert configure_logging_call_exists, \
+        'Are you calling the `configure_logging()` function and assigning the result to `access_log`?'
+
+    configure_logging_args = get_args(configure_logging_call[1])
+
+    arg_count = len(configure_logging_args) == 2
+    assert arg_count, \
+        'Are you passing the correct number of arguments to `configure_logging()`?'
+
+    first_arg = configure_logging_args[0] == '"access"'
+    assert first_arg, \
+        'Are you passing the correct name to `configure_logging()`?'
+
+    second_arg = configure_logging_args[1] == 'INFO'
+    assert second_arg, \
+        'Are you passing the correct level to `configure_logging()`?'
+
 
 @pytest.mark.test_after_request_module1
 def test_models_after_request_module1():
@@ -168,18 +274,99 @@ def test_models_after_request_module1():
     # @app.after_request
     # def after_request(response):
     #     return response
-    assert False
+    after_request = handlers_code.find('def', lambda node: \
+        node.name == 'after_request' and \
+        node.arguments[0].target.value == 'response')
+    after_request_exists = after_request is not None
+    assert after_request_exists, \
+        'Have you created a function called `after_request` with a parameter of `response`?'
+
+    decorator_exists = after_request.find('decorator', lambda node: node.find('dotted_name', lambda node: \
+          node.value[0].value == 'app' and \
+          node.value[1].type == 'dot' and \
+          node.value[2].value == 'after_request')) is not None
+    assert decorator_exists, \
+        'The `after_request` function should have a decorator of `@app.after_request`.'
+
+    return_after_request = after_request.find('return')
+    return_after_request_exists = return_after_request is not None and return_after_request.value.value == 'response'
+    assert return_after_request_exists, \
+        'Are you returning `response` from the `after_request` function?'
 
 @pytest.mark.test_access_log_format_module1
 def test_models_access_log_format_module1():
     # 08. Access Log Format
     # access_log.info('%s - - %s "%s %s %s" %s -', request.remote_addr, timestamp, request.method, request.path, request.scheme.upper(), response.status_code)
-    assert False
+    after_request = handlers_code.find('def', lambda node: \
+        node.name == 'after_request' and \
+        node.arguments[0].target.value == 'response')
+    after_request_exists = after_request is not None
+    assert after_request_exists, \
+        'Have you created a function called `after_request` with a parameter of `response`?'
+
+    info_call = after_request.find('atomtrailers', lambda node: \
+        node.value[0].value == 'access_log' and \
+        node.value[1].value == 'info' and \
+        node.value[2].type == 'call')
+    info_call_exists = info_call is not None
+    assert info_call_exists, \
+        'Are you calling the `access_log.info()` function?'
+
+    info_args = get_args(info_call[-1], False)
+
+    arg_count = len(info_args) == 7
+    assert arg_count, \
+        'Are you passing the correct number of arguments to `access_log.info()`?'
+
+    first_arg = info_args[0] == '\'%s - - %s "%s %s %s" %s -\'' 
+    assert first_arg, \
+        'Are you passing the correct log format to `access_log.info()` as the first argument?'
+
+    second_arg = info_args[1] == 'request.remote_addr' 
+    assert second_arg, \
+        'Are you passing the `request.remote_addr` to `access_log.info()` as the second argument?'
+
+    third_arg = info_args[2] == 'timestamp' 
+    assert third_arg, \
+        'Are you passing `timestamp` to `access_log.info()` as the third argument?'
+
+    fourth_arg = info_args[3] == 'request.method' 
+    assert fourth_arg, \
+        'Are you passing `request.method` to `access_log.info()` as the fourth argument?'
+
+    fifth_arg = info_args[4] == 'request.path' 
+    assert fifth_arg, \
+        'Are you passing `request.path` to `access_log.info()` as the fifth argument?'
+
+    sixth_arg = info_args[5] == 'request.scheme.upper()' 
+    assert sixth_arg, \
+        'Are you passing `request.scheme.upper()` to `access_log.info()` as the sixth argument?'
+
+    seventh_arg = info_args[6] == 'response.status_code' 
+    assert seventh_arg, \
+        'Are you passing `response.status_code` to `access_log.info()` as the seventh argument?'
 
 @pytest.mark.test_valid_status_codes_module1
 def test_models_valid_status_codes_module1():
     # 09. Valid Status Codes
     # if int(response.status_code) < 400:
-    assert False
+    after_request = handlers_code.find('def', lambda node: \
+        node.name == 'after_request' and \
+        node.arguments[0].target.value == 'response')
+    after_request_exists = after_request is not None
+    assert after_request_exists, \
+        'Have you created a function called `after_request` with a parameter of `response`?'
+
+    response_code = get_conditional(after_request, ['int(response.status_code):<:400', '400:>:int(response.status_code)'], 'if')
+    response_code_exists = response_code is not None
+    assert response_code_exists, \
+        'Do you have an `if` statement that tests if `int(response.status_code)` is less than `400`?'
+
+    info_call = response_code.parent.find('atomtrailers', lambda node: \
+        node.value[0].value == 'access_log' and \
+        node.value[1].value == 'info' and \
+        node.value[2].type == 'call')
+    info_call_exists = info_call is not None
+    assert info_call_exists, \
+        'Have you placed `access_log.info()` in an `if` statement?'
 #!
-'''
