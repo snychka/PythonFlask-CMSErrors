@@ -10,11 +10,8 @@ from tests.utils import *
 #!
 
 ## Paths
-admin = Path.cwd() / 'cms' / 'admin'
-admin_module = admin / '__init__.py'
-models = admin / 'models.py'
-auth = admin / 'auth.py'
-# login_template = template_data('not_found')
+handlers = Path.cwd() / 'cms' / 'handlers.py'
+auth = Path.cwd() / 'cms' / 'admin' / 'auth.py'
 #!
 
 ## Module Functions
@@ -24,12 +21,12 @@ def get_source_code(file_path):
 #!
 
 ## Source Code
-admin_module_code = get_source_code(admin_module)
-models_code = get_source_code(models)
+handlers_code = get_source_code(handlers)
 auth_code = get_source_code(auth)
+#!de = get_source_code(auth)
 #!
 
-'''
+
 ## Tests
 @pytest.mark.test_inject_titles_module2
 def test_models_inject_titles_module2():
@@ -38,13 +35,72 @@ def test_models_inject_titles_module2():
     # def inject_titles():
     #     titles = Content.query.with_entities(Content.slug, Content.title).join(Type).filter(Type.name == 'page')
     #     return dict(titles=titles)
-    assert False
+    inject_titles = handlers_code.find('def', name='inject_titles')
+    inject_titles_exists = inject_titles is not None
+    assert inject_titles_exists, \
+        'Have you created a function called `inject_titles` with a parameter of `response`?'
 
+    decorator_exists = inject_titles.find('decorator', lambda node: node.find('dotted_name', lambda node: \
+          node.value[0].value == 'app' and \
+          node.value[1].type == 'dot' and \
+          node.value[2].value == 'context_processor')) is not None
+    assert decorator_exists, \
+        'The `inject_titles` function should have a decorator of `@app.context_processor`.'
+
+    titles = inject_titles.find('assign', lambda node: node.target.value == 'titles')
+    titles_exists = titles is not None
+    assert titles_exists, \
+        'Are you setting the `titles` variable correctly?'
+    with_entities_call = titles.find('atomtrailers', lambda node: \
+        node.value[0].value == 'Content' and \
+        node.value[1].value == 'query' and \
+        node.value[2].value == 'with_entities' and \
+        node.value[3].type == 'call'
+        )
+
+    with_entities_call_node = with_entities_call.find('name', value='with_entities').next
+    with_entities_args = get_args(with_entities_call_node)
+
+    slug_arg = 'Content.slug' in with_entities_args
+    assert slug_arg, \
+        'Are you passing `Content.slug` to the `with_entities()` function?'
+
+    title_arg = 'Content.slug' in with_entities_args
+    assert title_arg, \
+        'Are you passing `Content.title` to the `with_entities()` function?'
+
+    join_call = with_entities_call.find('name', value='join').next
+    join_args = get_args(join_call)
+
+    type_arg = 'Type' in join_args
+    assert type_arg, \
+        'Are you passing `Type` to the `join()` function?'
+
+    filter_call = with_entities_call.find('name', value='filter').next
+    filter_args = get_args(filter_call)
+
+    page_arg = 'Type.name=="page"' in filter_args
+    assert page_arg, \
+        'Are you passing the correct condition to the `filter()` function?'
+
+    return_dict = inject_titles.find('return', lambda node: \
+        node.value[0].value == 'dict' and \
+        node.value[1].type == 'call')
+    return_dict_exists = return_dict is not None
+    assert return_dict_exists, \
+        'Are you returning a `dict()`?'
+
+    return_dict_args = 'titles:titles' in get_args(return_dict.find('call'))
+    assert return_dict_args, \
+        'Are you passing the `titles` with a `titles` keyword argument to `dict()`?'
+
+'''
 @pytest.mark.test_not_found_template_module2
 def test_models_not_found_template_module2():
     # 02. Not Found Template
     # Create `templates/not_found.html`
     assert False
+'''
 
 @pytest.mark.test_not_found_handler_module2
 def test_models_not_found_handler_module2():
@@ -52,22 +108,92 @@ def test_models_not_found_handler_module2():
     # @app.errorhandler(404)
     # def page_not_found(e):
     #     return render_template('not_found.html'), 404
-    assert False
+    def_page_not_found = handlers_code.find('def', lambda node: \
+        node.name == 'page_not_found' and \
+        node.arguments[0].target.value == 'e')
+
+    decorator = def_page_not_found.find('decorator', lambda node: node.find('dotted_name', lambda node: \
+          node.value[0].value == 'app' and \
+          node.value[1].type == 'dot' and \
+          node.value[2].value == 'errorhandler' and \
+          node.parent.call.value[0].value.value == '404'))
+
+    decorator_exists = decorator is not None
+    assert decorator_exists, \
+        'The `page_not_found` function should have a decorator of `@app.errorhandler(404)`.'
+
+    return_404 = def_page_not_found.find('tuple', lambda node: \
+        node.parent.type == 'return' and \
+        node.value[0].value[0].value == 'render_template' and \
+        node.value[0].value[1].value[0].value.value.replace("'", '"') == '"not_found.html"' and \
+        node.value[-1].value == '404') is not None
+    assert return_404, \
+        'The `page_not_found` function should render the `not_found.html` template with a `404`.'
+
 
 @pytest.mark.test_error_log_module2
 def test_error_log_module2():
     # 04. Error Log
     # error_log = configure_logging('error', ERROR)
-    assert False
+    error_log = handlers_code.find('assign', lambda node: node.target.value == 'error_log')
+    error_log_exists = error_log is not None
+    assert error_log_exists, \
+        'Are you setting the `error_log` variable correctly?'
+
+    configure_logging_call = error_log.find('atomtrailers', lambda node: \
+        node.value[0].value == 'configure_logging' and \
+        node.value[1].type == 'call'
+        )
+    configure_logging_call_exists = configure_logging_call is not None
+    assert configure_logging_call_exists, \
+        'Are you calling the `configure_logging()` function and assigning the result to `error_log`?'
+
+    configure_logging_args = get_args(configure_logging_call[1])
+
+    arg_count = len(configure_logging_args) == 2
+    assert arg_count, \
+        'Are you passing the correct number of arguments to `configure_logging()`?'
+
+    first_arg = configure_logging_args[0] == '"error"'
+    assert first_arg, \
+        'Are you passing the correct name to `configure_logging()`?'
+
+    second_arg = configure_logging_args[1] == 'ERROR'
+    assert second_arg, \
+        'Are you passing the correct level to `configure_logging()`?'
 
 @pytest.mark.test_error_handler_module2
 def test_models_error_handler_module2():
     # 05. Error Handler
+    # from traceback import format_exc
     # @app.errorhandler(Exception)
     # def handle_exception(e):
     #     tb = format_exc()
-    assert False
 
+    traceback_import = get_imports(handlers_code, 'traceback')
+    traceback_import_exits = traceback_import is not None
+    assert traceback_import_exits, \
+        'Do you have a `traceback` import statement?'
+    format_exc_exists = 'format_exc' in traceback_import
+    assert format_exc_exists, \
+        'Are you importing `format_exc` from `traceback` in `cms/handlers.py`?'
+
+    def_handle_exception = handlers_code.find('def', lambda node: \
+        node.name == 'handle_exception' and \
+        node.arguments[0].target.value == 'e')
+
+    decorator = def_handle_exception.find('decorator', lambda node: node.find('dotted_name', lambda node: \
+          node.value[0].value == 'app' and \
+          node.value[1].type == 'dot' and \
+          node.value[2].value == 'errorhandler' and \
+          node.parent.call.value[0].value.value == 'Exception'))
+
+    decorator_exists = decorator is not None
+    assert decorator_exists, \
+        'The `page_not_found` function should have a decorator of `@app.errorhandler(Exception)`.'
+
+
+'''
 @pytest.mark.test_error_log_format_module2
 def test_models_error_log_format_module2():
     # 06. Error Log Format

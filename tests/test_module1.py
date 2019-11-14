@@ -198,8 +198,8 @@ def test_models_timestamp_module1():
     time_import_exits = time_import is not None
     assert time_import_exits, \
         'Do you have a `time` import statement?'
-    rotating_file_exists = 'strftime' in time_import
-    assert rotating_file_exists, \
+    strftime_exists = 'strftime' in time_import
+    assert strftime_exists, \
         'Are you importing `strftime` from `time` in `cms/handlers.py`?'
 
     timestamp = handlers_code.find('assign', lambda node: node.target.value == 'timestamp')
@@ -245,7 +245,7 @@ def test_modelsaccess_log__module1():
     assert access_log_exists, \
         'Are you setting the `access_log` variable correctly?'
 
-    configure_logging_call = handlers_code.find('atomtrailers', lambda node: \
+    configure_logging_call = access_log.find('atomtrailers', lambda node: \
         node.value[0].value == 'configure_logging' and \
         node.value[1].type == 'call'
         )

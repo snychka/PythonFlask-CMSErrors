@@ -189,12 +189,14 @@ def get_form_data(code, route, values, name):
 
 def get_args(nodes, rq=True):
     args = []
-    for node in nodes:
-        if node.target is None:
-            if rq:
-                args.append(str(node.value).replace("'", '"').replace(' ', ''))
+    if nodes is not None: 
+        for node in nodes:
+            if node.target is None:
+                if rq:
+                    args.append(str(node.value).replace("'", '"').replace(' ', ''))
+                else:
+                    args.append(str(node.value))
             else:
-                args.append(str(node.value))
-        else:
-            args.append('{}:{}'.format(node.target.value, str(node.value)))
+                args.append('{}:{}'.format(node.target.value, str(node.value)))
+
     return args
