@@ -3,7 +3,8 @@ from cms.admin.models import User
 from flask import render_template, request, redirect, url_for, flash
 
 from functools import wraps
-from flask import g, session, current_app
+from flask import g, session
+from flask import current_app # TASK(M03T03)
 
 from blinker import Namespace # TASK(M03T01)
 _signals = Namespace() # TASK(M03T01)

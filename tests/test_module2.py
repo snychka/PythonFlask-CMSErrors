@@ -27,7 +27,6 @@ def get_source_code(file_path):
 ## Source Code
 handlers_code = get_source_code(handlers)
 auth_code = get_source_code(auth)
-#!de = get_source_code(auth)
 #!
 
 

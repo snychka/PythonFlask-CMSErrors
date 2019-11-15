@@ -141,7 +141,7 @@ def test_models_rotating_file_handler_module1():
         )
     rotating_file_call_exists = rotating_file_call is not None
     assert rotating_file_call_exists, \
-        'Are you calling the `getLogger()` function and assigning the result to `request_log`?'
+        'Are you creating a RotatingFileHandler instance and assigning it to `handler`?'
 
     rotating_file_args = get_args(rotating_file_call[1])
 
