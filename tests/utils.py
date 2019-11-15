@@ -4,7 +4,7 @@ from jinja2 import Environment, PackageLoader, exceptions, meta, nodes
 
 from redbaron import RedBaron
 
-def parsed_content(name, path='/admin/templates/admin'):
+def parsed_content(name, path='templates'):
     try:
         env = Environment(loader=PackageLoader('cms', path))
         return env.parse(env.loader.get_source(env, name + '.html')[0])
@@ -99,6 +99,15 @@ def template_functions(name, function_name):
             functions.append(args_string)
 
     return functions
+
+def template_variables(name):
+    return [node.name for node in parsed_content(name).find_all(nodes.Name)]
+
+def template_block(name):
+    blocks = []
+    for block in parsed_content(name).find_all(nodes.Block):
+        blocks.append(block.name)
+    return blocks
 
 def get_imports(code, value):
     imports = code.find_all('from_import',  lambda node: ''.join(list(node.value.node_list.map(lambda node: str(node)))) == value).find_all('name_as_name')
@@ -200,3 +209,6 @@ def get_args(nodes, rq=True):
                 args.append('{}:{}'.format(node.target.value, str(node.value)))
 
     return args
+
+def template_extends(name):
+    return list(meta.find_referenced_templates(parsed_content(name)))

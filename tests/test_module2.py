@@ -12,6 +12,10 @@ from tests.utils import *
 ## Paths
 handlers = Path.cwd() / 'cms' / 'handlers.py'
 auth = Path.cwd() / 'cms' / 'admin' / 'auth.py'
+not_found_template = Path.cwd() / 'cms' / 'templates' / 'not_found.html'
+not_found_template_exists = Path.exists(not_found_template) and Path.is_file(not_found_template)
+error_template = Path.cwd() / 'cms' / 'templates' / 'error.html'
+error_template_exists = Path.exists(error_template) and Path.is_file(error_template)
 #!
 
 ## Module Functions
@@ -94,13 +98,25 @@ def test_models_inject_titles_module2():
     assert return_dict_args, \
         'Are you passing the `titles` with a `titles` keyword argument to `dict()`?'
 
-'''
+
 @pytest.mark.test_not_found_template_module2
 def test_models_not_found_template_module2():
     # 02. Not Found Template
     # Create `templates/not_found.html`
-    assert False
-'''
+    assert not_found_template_exists, \
+        'Have you created a `not_found.html` file in the `cms/templates` folder?'
+
+    extends_base = 'base.html' in template_extends('not_found')
+    assert extends_base, \
+        'The `not_found.html` template does not extend `base.html`.'
+
+    content_block = 'content' in template_block('not_found')
+    assert content_block, \
+        'Have you added a template `block` called `content`?'
+
+    url_for_call = 'index:slug:home' in template_functions('not_found', 'url_for')
+    assert url_for_call, \
+        'Are you redirecting the user back Home with a call to `url_for()`.'
 
 @pytest.mark.test_not_found_handler_module2
 def test_models_not_found_handler_module2():
@@ -129,7 +145,6 @@ def test_models_not_found_handler_module2():
         node.value[-1].value == '404') is not None
     assert return_404, \
         'The `page_not_found` function should render the `not_found.html` template with a `404`.'
-
 
 @pytest.mark.test_error_log_module2
 def test_error_log_module2():
@@ -210,68 +225,160 @@ def test_models_error_handler_module2():
 def test_models_error_log_format_module2():
     # 06. Error Log Format
     # error_log.error('%s - - %s "%s %s %s" 500 -\n%s', request.remote_addr, timestamp, request.method, request.path, request.scheme.upper(), tb)
-    # info_call = after_request.find('atomtrailers', lambda node: \
-    #     node.value[0].value == 'access_log' and \
-    #     node.value[1].value == 'info' and \
-    #     node.value[2].type == 'call')
-    # info_call_exists = info_call is not None
-    # assert info_call_exists, \
-    #     'Are you calling the `access_log.info()` function?'
+    def_handle_exception = handlers_code.find('def', lambda node: \
+        node.name == 'handle_exception' and \
+        node.arguments[0].target.value == 'e')
+    def_handle_exception_exists = def_handle_exception is not None
+    assert def_handle_exception_exists, \
+        'Have you created a function called `handle_exception` with a parameter of `e`?'
 
-    # info_args = get_args(info_call[-1], False)
+    error_call = def_handle_exception.find('atomtrailers', lambda node: \
+        node.value[0].value == 'error_log' and \
+        node.value[1].value == 'error' and \
+        node.value[2].type == 'call')
+    error_call_exists = error_call is not None
+    assert error_call_exists, \
+        'Are you calling the `error_log.error()` function?'
 
-    # arg_count = len(info_args) == 7
-    # assert arg_count, \
-    #     'Are you passing the correct number of arguments to `access_log.info()`?'
+    error_args = get_args(error_call[-1], False)
 
-    # first_arg = info_args[0] == '\'%s - - %s "%s %s %s" %s -\'' 
-    # assert first_arg, \
-    #     'Are you passing the correct log format to `access_log.info()` as the first argument?'
+    arg_count = len(error_args) == 7
+    assert arg_count, \
+        'Are you passing the correct number of arguments to `error_log.error()`?'
 
-    # second_arg = info_args[1] == 'request.remote_addr' 
-    # assert second_arg, \
-    #     'Are you passing the `request.remote_addr` to `access_log.info()` as the second argument?'
+    first_arg = error_args[0] == '\'%s - - %s "%s %s %s" 500 -\\n%s\''
+    assert first_arg, \
+        'Are you passing the correct log format to `error_log.error()` as the first argument?'
 
-    # third_arg = info_args[2] == 'timestamp' 
-    # assert third_arg, \
-    #     'Are you passing `timestamp` to `access_log.info()` as the third argument?'
+    second_arg = error_args[1] == 'request.remote_addr' 
+    assert second_arg, \
+        'Are you passing the `request.remote_addr` to `error_log.error()` as the second argument?'
 
-    # fourth_arg = info_args[3] == 'request.method' 
-    # assert fourth_arg, \
-    #     'Are you passing `request.method` to `access_log.info()` as the fourth argument?'
+    third_arg = error_args[2] == 'timestamp' 
+    assert third_arg, \
+        'Are you passing `timestamp` to `error_log.error()` as the third argument?'
 
-    # fifth_arg = info_args[4] == 'request.path' 
-    # assert fifth_arg, \
-    #     'Are you passing `request.path` to `access_log.info()` as the fifth argument?'
+    fourth_arg = error_args[3] == 'request.method' 
+    assert fourth_arg, \
+        'Are you passing `request.method` to `error_log.error()` as the fourth argument?'
 
-    # sixth_arg = info_args[5] == 'request.scheme.upper()' 
-    # assert sixth_arg, \
-    #     'Are you passing `request.scheme.upper()` to `access_log.info()` as the sixth argument?'
+    fifth_arg = error_args[4] == 'request.path' 
+    assert fifth_arg, \
+        'Are you passing `request.path` to `error_log.error()` as the fifth argument?'
 
-    # seventh_arg = info_args[6] == 'response.status_code' 
-    # assert seventh_arg, \
-    #     'Are you passing `response.status_code` to `access_log.info()` as the seventh argument?'
+    sixth_arg = error_args[5] == 'request.scheme.upper()' 
+    assert sixth_arg, \
+        'Are you passing `request.scheme.upper()` to `error_log.error()` as the sixth argument?'
 
-    assert False
+    seventh_arg = error_args[6] == 'tb' 
+    assert seventh_arg, \
+        'Are you passing `tb` to `error_log.error()` as the seventh argument?'
 
-'''
 @pytest.mark.test_error_template_module2
 def test_models_error_template_module2():
     # 07. Error Template
     # Create `templates/error.html`
-    assert False
+    assert error_template_exists, \
+        'Have you created a `error.html` file in the `cms/templates` folder?'
+
+    extends_base = 'base.html' in template_extends('error')
+    assert extends_base, \
+        'The `error.html` template does not extend `base.html`.'
+
+    content_block = 'content' in template_block('error')
+    assert content_block, \
+        'Have you added a template `block` called `content`?'
+
+    error_varaible = 'error' in template_variables('error')
+    assert error_varaible, \
+        'Have you added a template variable called `error` to the `content` block?'
+
+    url_for_call = 'index:slug:home' in template_functions('error', 'url_for')
+    assert url_for_call, \
+        'Are you redirecting the user back Home with a call to `url_for()`.'
 
 @pytest.mark.test_render_original_error_template_module2
 def test_models_render_original_error_template_module2():
     # 08. Render Original Error Template
     # original = getattr(e, 'original_exception', None)
     # return render_template('error.html', error=original), 500
-    assert False
+    def_handle_exception = handlers_code.find('def', lambda node:
+        node.name == 'handle_exception' and \
+        node.arguments[0].target.value == 'e')
+    def_handle_exception_exists = def_handle_exception is not None
+    assert def_handle_exception_exists, \
+        'Have you created a function called `handle_exception` with a parameter of `e`?'
+
+    getattr_call = def_handle_exception.find('assign', lambda node:
+        node.value.value[0].value == 'getattr' and \
+        node.value.value[1].type == 'call')
+    getattr_call_exists = getattr_call is not None
+    assert getattr_call_exists, \
+        'Are you calling the `getattr` function and assigning it to a variable?'
+
+    getattr_variable = getattr_call.target.value
+
+    getattr_args = get_args(getattr_call.find('call'))
+
+    arg_count = len(getattr_args) == 3
+    assert arg_count, \
+        'Are you passing the correct number of arguments to `getattr()`?'
+
+    first_arg = getattr_args[0] == 'e'
+    assert first_arg, \
+        'Are you passing `e` to `getattr()` as the first argument?'
+
+    second_arg = getattr_args[1] == '"original_exception"'
+    assert second_arg, \
+        'Are you passing the `"original_exception"` to `getattr()` as the second argument?'
+
+    third_arg = getattr_args[2] == 'None'
+    assert third_arg, \
+        'Are you passing `None` to `getattr()` as the third argument?'
+
+    return_500 = def_handle_exception.find('tuple', lambda node:
+        node.parent.type == 'return' and \
+        node.value[0].value[0].value == 'render_template' and \
+        node.value[0].value[1].value[0].value.value.replace("'", '"') == '"error.html"' and \
+        len(node.value[0].value[1].value) == 2 and \
+        node.value[0].value[1].value[1].target.value == 'error' and \
+        node.value[0].value[1].value[1].value.value == getattr_variable and \
+        node.value[-1].value == '500') is not None
+
+    assert return_500, \
+        'The `handle_exception` function should render the `error.html` template with a `500`. Make sure to pass the keyword argument `error` set to the variable created to store the result of the `getattr` call.'
 
 @pytest.mark.test_render_simple_error_template_module2
 def test_models_render_simple_error_template_module2():
     # 09. Render Simple Error Template
     # if original is None:
     #     return render_template('error.html'), 500
-    assert False
-'''
+    def_handle_exception = handlers_code.find('def', lambda node: \
+        node.name == 'handle_exception' and \
+        node.arguments[0].target.value == 'e')
+    def_handle_exception_exists = def_handle_exception is not None
+    assert def_handle_exception_exists, \
+        'Have you created a function called `handle_exception` with a parameter of `e`?'
+
+    getattr_call = def_handle_exception.find('assign', lambda node:
+        node.value.value[0].value == 'getattr' and \
+        node.value.value[1].type == 'call')
+    getattr_call_exists = getattr_call is not None
+    assert getattr_call_exists, \
+        'Are you calling the `getattr` function and assigning it to a variable?'
+
+    getattr_variable = getattr_call.target.value
+
+    original_if = get_conditional(def_handle_exception, ['{}:is:None'.format(getattr_variable)], 'if')
+    original_if_exists = original_if is not None
+    assert original_if_exists, \
+        'Do you have an `if` statement that tests if `{}` is `None`?'.format(getattr_variable)
+
+    return_500 = original_if.parent.find('tuple', lambda node: \
+        node.parent.type == 'return' and \
+        node.value[0].value[0].value == 'render_template' and \
+        node.value[0].value[1].value[0].value.value.replace("'", '"') == '"error.html"' and \
+        node.value[-1].value == '500')
+
+    assert return_500, \
+        'Are you rendering the `error.html` template with a `500` in the `if` statement'
