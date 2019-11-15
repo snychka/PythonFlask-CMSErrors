@@ -197,7 +197,7 @@ def test_models_unauthorized_log_format_module3():
     assert arg_count, \
         'Are you passing the correct number of arguments to `unauthorized_log.warning()`?'
 
-    first_arg = warning_args[0] == "'Unauthorized: %s %s %s'"
+    first_arg = warning_args[0].replace("'", '"') == '"Unauthorized: %s %s %s"'
     assert first_arg, \
         'Are you passing the correct log format to `unauthorized_log.warning()` as the first argument?'
 
