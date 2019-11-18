@@ -130,6 +130,9 @@ def get_conditional(code, values, type, nested=False):
 def rq(string):
     return re.sub(r'(\'|")', '', str(string))
 
+def tqrw(string):
+    return str(string).replace("'", '"').replace(' ', '')
+
 def get_route(code, route):
     route_function = code.find('def', name=route)
     route_function_exists = route_function is not None
@@ -202,12 +205,14 @@ def get_args(nodes, rq=True):
         for node in nodes:
             if node.target is None:
                 if rq:
-                    args.append(str(node.value).replace("'", '"').replace(' ', ''))
+                    args.append(tqrw(node.value))
                 else:
                     args.append(str(node.value))
             else:
-                args.append('{}:{}'.format(node.target.value, str(node.value)))
-
+                if rq:
+                    args.append('{}:{}'.format(tqrw(node.target.value), tqrw(node.value)))
+                else:
+                    args.append('{}:{}'.format(node.target.value, str(node.value)))
     return args
 
 def template_extends(name):

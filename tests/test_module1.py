@@ -66,7 +66,6 @@ def test_disable_werkzeug_logging_module1():
     assert request_log_disabled, \
         'Have you set the `disabled` property on `request_log` to `True`?'
 
-
 @pytest.mark.test_configure_logging_module1
 def test_configure_logging_module1():
     # 02. Configure Logging
@@ -161,7 +160,6 @@ def test_rotating_file_handler_module1():
     assert backup_count_exists, \
         'Are you passing a `backupCount` keyword argument set to `10`?'
 
-
 @pytest.mark.test_add_handler_module1
 def test_add_handler_module1():
     # 04. Add Log Handler
@@ -182,11 +180,11 @@ def test_add_handler_module1():
         )
     add_handler_call_exists = add_handler_call is not None
     assert add_handler_call_exists, \
-        'Are you calling the `log.setLevel()` function?'
+        'Are you calling the `log.addHandler()` function?'
     add_handler_argument = add_handler_call.find('call_argument', lambda node: \
         str(node.value.value) == 'handler') is not None
     assert add_handler_argument, \
-        'Are you passing the `log.setLevel()` function the correct argument?'
+        'Are you passing the `log.addHandler()` function the correct argument?'
 
     return_log = def_configure_logging.find('return')
     return_log_exists = return_log is not None and return_log.value.value == 'log'
@@ -270,7 +268,6 @@ def test_access_log_module1():
     second_arg = configure_logging_args[1] == 'INFO'
     assert second_arg, \
         'Are you passing the correct level to `configure_logging()`?'
-
 
 @pytest.mark.test_after_request_module1
 def test_after_request_module1():
@@ -370,7 +367,8 @@ def test_valid_status_codes_module1():
         node.value[0].value == 'access_log' and \
         node.value[1].value == 'info' and \
         node.value[2].type == 'call')
-    info_call_exists = info_call is not None
-    assert info_call_exists, \
-        'Have you placed `access_log.info()` in an `if` statement?'
+    info_placement = info_call is not None and \
+        (len(response_code.indentation) * 2) == len(info_call.indentation)
+    assert info_placement, \
+        'Have you placed `access_log.info()` in the `if` statement?'
 #!
