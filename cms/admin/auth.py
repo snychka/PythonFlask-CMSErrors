@@ -5,7 +5,6 @@ from flask import render_template, request, redirect, url_for, flash
 from functools import wraps
 from flask import g, session
 
-
 def protected(route_function):
     @wraps(route_function)
     def wrapped_route_function(**kwargs):

@@ -171,6 +171,10 @@ def test_add_handler_module1():
         node.name == 'configure_logging' and \
         node.arguments[0].target.value == 'name' and \
         node.arguments[1].target.value == 'level')
+    def_configure_logging_exists = def_configure_logging is not None
+    assert def_configure_logging_exists, \
+        'Have you created a function at the top of `handlers.py` called `configure_logging`? Do you have the correct parameters?'
+
     add_handler_call = def_configure_logging.find('atomtrailers', lambda node: \
         node.value[0].value == 'log' and \
         node.value[1].value == 'addHandler' and \

@@ -126,6 +126,9 @@ def test_not_found_handler_module2():
     def_page_not_found = handlers_code.find('def', lambda node: \
         node.name == 'page_not_found' and \
         node.arguments[0].target.value == 'e')
+    def_page_not_found_exists = def_page_not_found is not None
+    assert def_page_not_found_exists, \
+        'Have you created a function called `page_not_found` with a parameter of `e`?'
 
     decorator = def_page_not_found.find('decorator', lambda node: node.find('dotted_name', lambda node: \
           node.value[0].value == 'app' and \

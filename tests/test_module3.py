@@ -41,20 +41,21 @@ def test_namespace_module3():
         'Are you importing `Namespace` from `blinker` in `cms/handlers.py`?'
 
     namespace_call = auth_code.find('assign', lambda node:
-        node.value.value[0].value == 'Namespace' and \
-        node.value.value[1].type == 'call')
+        node.find('name', lambda node:
+            node.value == 'Namespace' and \
+            node.next.type == 'call'))
     namespace_call_exists = namespace_call is not None
     assert namespace_call_exists, \
         'Are you creating an instance of `Namespace()`?'
-
 
 @pytest.mark.test_unauthorized_signal_module3
 def test_unauthorized_signal_module3():
     # 02. Unauthorized Signal
     # unauthorized = _signals.signal('unauthorized')
     namespace_call = auth_code.find('assign', lambda node:
-        node.value.value[0].value == 'Namespace' and \
-        node.value.value[1].type == 'call')
+        node.find('name', lambda node:
+            node.value == 'Namespace' and \
+            node.next.type == 'call'))
     namespace_call_exists = namespace_call is not None
     assert namespace_call_exists, \
         'Are you creating an instance of `Namespace()`?'
@@ -69,7 +70,7 @@ def test_unauthorized_signal_module3():
         node.value[2].type == 'call')
     signal_call_exists = signal_call is not None
     assert signal_call_exists, \
-        'Are you calling the `{}.signal()` function and assign it to `unauthorized`?'.format(namespace_instance)
+        'Are you calling the `{}.signal()` function and assigning it to `unauthorized`?'.format(namespace_instance)
 
     signal_args = get_args(signal_call[-1])
 
@@ -80,7 +81,6 @@ def test_unauthorized_signal_module3():
     first_arg = signal_args[0] == '"unauthorized"'
     assert first_arg, \
         'Are you passing `"unauthorized"` to `{}.signal()` as the first argument?'.format(namespace_instance)
-
 
 @pytest.mark.test_send_unauthorized_signal_module3
 def test_send_unauthorized_signal_module3():
