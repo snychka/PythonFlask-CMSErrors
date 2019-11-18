@@ -10,7 +10,14 @@ def get_source_code(filename):
     grammar = parso.load_grammar()
     module = grammar.parse(path=file_path.resolve())
     parse_error = len(grammar.iter_errors(module)) == 0
-    message = 'The `{}` file has a syntax error.'.format(file_path.name)
+    try:
+        error_message = grammar.iter_errors(module)[0].message
+        error_start_pos = grammar.iter_errors(module)[0].start_pos[0]
+    except IndexError:
+        error_message = ''
+        error_start_pos = ''
+    message = '{} on or around line {} in `{}`.' \
+        .format(error_message, error_start_pos, file_path.name)
     assert parse_error, message
 
     with open(file_path.resolve(), 'r') as source_code:
