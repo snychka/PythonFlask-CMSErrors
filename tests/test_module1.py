@@ -1,28 +1,6 @@
 ## Imports
 import pytest
-import re
-import sqlite3
-
-from pathlib import Path
-from redbaron import RedBaron
-
 from tests.utils import *
-#!
-
-## Paths
-handlers = Path.cwd() / 'cms' / 'handlers.py'
-auth = Path.cwd() / 'cms' / 'admin' / 'auth.py'
-#!
-
-## Module Functions
-def get_source_code(file_path):
-    with open(file_path.resolve(), 'r') as source_code:
-        return RedBaron(source_code.read())
-#!
-
-## Source Code
-handlers_code = get_source_code(handlers)
-auth_code = get_source_code(auth)
 #!
 
 ## Tests
@@ -32,7 +10,7 @@ def test_disable_werkzeug_logging_module1():
     # from logging import getLogger
     # request_log = getLogger('werkzeug')
     # request_log.disabled = True
-    logging_import = get_imports(handlers_code, 'logging')
+    logging_import = get_imports(handlers_code(), 'logging')
     logging_import_exits = logging_import is not None
     assert logging_import_exits, \
         'Do you have a `werkzeug.security` import statement?'
@@ -40,7 +18,7 @@ def test_disable_werkzeug_logging_module1():
     assert get_logger_exists, \
         'Are you importing `getLogger` from `logging` in `cms/handlers.py`?'
 
-    request_log = handlers_code.find('assign', lambda node: node.target.value == 'request_log')
+    request_log = handlers_code().find('assign', lambda node: node.target.value == 'request_log')
     request_log_exists = request_log is not None
     assert request_log_exists, \
         'Are you setting the `user_id` variable correctly?'
@@ -57,7 +35,7 @@ def test_disable_werkzeug_logging_module1():
     assert get_argument, \
         'Are you passing the `getLogger()` function the correct argument?'
 
-    request_log_disabled = handlers_code.find('assign', lambda node: \
+    request_log_disabled = handlers_code().find('assign', lambda node: \
         node.target.find('atomtrailers', lambda node: \
             node.value[0].value == 'request_log' and \
             node.value[1].value == 'disabled') and \
@@ -72,7 +50,7 @@ def test_configure_logging_module1():
     # def configure_logging(name, level):
     #     log = getLogger(name)
     #     log.setLevel(level)
-    def_configure_logging = handlers_code.find('def', lambda node: \
+    def_configure_logging = handlers_code().find('def', lambda node: \
         node.name == 'configure_logging' and \
         node.arguments[0].target.value == 'name' and \
         node.arguments[1].target.value == 'level')
@@ -114,7 +92,7 @@ def test_rotating_file_handler_module1():
     # 03. Rotate File Handler
     # from logging.handlers import RotatingFileHandler
     # handler = RotatingFileHandler('logs/{}.log'.format(name), maxBytes=1024*1024, backupCount=10)
-    def_configure_logging = handlers_code.find('def', lambda node: \
+    def_configure_logging = handlers_code().find('def', lambda node: \
         node.name == 'configure_logging' and \
         node.arguments[0].target.value == 'name' and \
         node.arguments[1].target.value == 'level')
@@ -122,7 +100,7 @@ def test_rotating_file_handler_module1():
     assert def_configure_logging_exists, \
         'Have you created a function at the top of `handlers.py` called `configure_logging`? Do you have the correct parameters?'
 
-    handler_import = get_imports(handlers_code, 'logging.handlers')
+    handler_import = get_imports(handlers_code(), 'logging.handlers')
     handler_import_exits = handler_import is not None
     assert handler_import_exits, \
         'Do you have a `logging.handlers` import statement?'
@@ -165,7 +143,7 @@ def test_add_handler_module1():
     # 04. Add Log Handler
     # log.addHandler(handler)
     # return log
-    def_configure_logging = handlers_code.find('def', lambda node: \
+    def_configure_logging = handlers_code().find('def', lambda node: \
         node.name == 'configure_logging' and \
         node.arguments[0].target.value == 'name' and \
         node.arguments[1].target.value == 'level')
@@ -196,7 +174,7 @@ def test_timestamp_module1():
     # 05. Timestamp Formatting
     # from time import strftime
     # timestamp = strftime('[%d/%b/%Y %H:%M:%S]')
-    time_import = get_imports(handlers_code, 'time')
+    time_import = get_imports(handlers_code(), 'time')
     time_import_exits = time_import is not None
     assert time_import_exits, \
         'Do you have a `time` import statement?'
@@ -204,7 +182,7 @@ def test_timestamp_module1():
     assert strftime_exists, \
         'Are you importing `strftime` from `time` in `cms/handlers.py`?'
 
-    timestamp = handlers_code.find('assign', lambda node: node.target.value == 'timestamp')
+    timestamp = handlers_code().find('assign', lambda node: node.target.value == 'timestamp')
     timestamp_exists = timestamp is not None
     assert timestamp_exists, \
         'Are you setting the `timestamp` variable correctly?'
@@ -225,7 +203,7 @@ def test_access_log_module1():
     # 06. Access Log
     # from logging import INFO, WARN, ERROR
     # access_log = configure_logging('access', INFO)
-    logging_import = get_imports(handlers_code, 'logging')
+    logging_import = get_imports(handlers_code(), 'logging')
     logging_import_exists = logging_import is not None
     assert logging_import_exists, \
         'Do you have an import from `logging` statement?'
@@ -242,7 +220,7 @@ def test_access_log_module1():
     assert logging_import_error, \
         'Are you importing `ERROR` from `logging` in `cms/handlers.py`?'
 
-    access_log = handlers_code.find('assign', lambda node: node.target.value == 'access_log')
+    access_log = handlers_code().find('assign', lambda node: node.target.value == 'access_log')
     access_log_exists = access_log is not None
     assert access_log_exists, \
         'Are you setting the `access_log` variable correctly?'
@@ -275,7 +253,7 @@ def test_after_request_module1():
     # @app.after_request
     # def after_request(response):
     #     return response
-    after_request = handlers_code.find('def', lambda node: \
+    after_request = handlers_code().find('def', lambda node: \
         node.name == 'after_request' and \
         node.arguments[0].target.value == 'response')
     after_request_exists = after_request is not None
@@ -298,7 +276,7 @@ def test_after_request_module1():
 def test_access_log_format_module1():
     # 08. Access Log Format
     # access_log.info('%s - - %s "%s %s %s" %s -', request.remote_addr, timestamp, request.method, request.path, request.scheme.upper(), response.status_code)
-    after_request = handlers_code.find('def', lambda node: \
+    after_request = handlers_code().find('def', lambda node: \
         node.name == 'after_request' and \
         node.arguments[0].target.value == 'response')
     after_request_exists = after_request is not None
@@ -351,7 +329,7 @@ def test_access_log_format_module1():
 def test_valid_status_codes_module1():
     # 09. Valid Status Codes
     # if int(response.status_code) < 400:
-    after_request = handlers_code.find('def', lambda node: \
+    after_request = handlers_code().find('def', lambda node: \
         node.name == 'after_request' and \
         node.arguments[0].target.value == 'response')
     after_request_exists = after_request is not None

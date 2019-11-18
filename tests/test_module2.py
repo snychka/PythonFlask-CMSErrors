@@ -1,34 +1,14 @@
 ## Imports
 import pytest
-import re
-import sqlite3
-
-from pathlib import Path
-from redbaron import RedBaron
-
 from tests.utils import *
 #!
 
 ## Paths
-handlers = Path.cwd() / 'cms' / 'handlers.py'
-auth = Path.cwd() / 'cms' / 'admin' / 'auth.py'
 not_found_template = Path.cwd() / 'cms' / 'templates' / 'not_found.html'
 not_found_template_exists = Path.exists(not_found_template) and Path.is_file(not_found_template)
 error_template = Path.cwd() / 'cms' / 'templates' / 'error.html'
 error_template_exists = Path.exists(error_template) and Path.is_file(error_template)
 #!
-
-## Module Functions
-def get_source_code(file_path):
-    with open(file_path.resolve(), 'r') as source_code:
-        return RedBaron(source_code.read())
-#!
-
-## Source Code
-handlers_code = get_source_code(handlers)
-auth_code = get_source_code(auth)
-#!
-
 
 ## Tests
 @pytest.mark.test_inject_titles_module2
@@ -38,7 +18,7 @@ def test_inject_titles_module2():
     # def inject_titles():
     #     titles = Content.query.with_entities(Content.slug, Content.title).join(Type).filter(Type.name == 'page')
     #     return dict(titles=titles)
-    inject_titles = handlers_code.find('def', name='inject_titles')
+    inject_titles = handlers_code().find('def', name='inject_titles')
     inject_titles_exists = inject_titles is not None
     assert inject_titles_exists, \
         'Have you created a function called `inject_titles` with a parameter of `response`?'
@@ -97,7 +77,6 @@ def test_inject_titles_module2():
     assert return_dict_args, \
         'Are you passing the `titles` with a `titles` keyword argument to `dict()`?'
 
-
 @pytest.mark.test_not_found_template_module2
 def test_not_found_template_module2():
     # 02. Not Found Template
@@ -123,7 +102,7 @@ def test_not_found_handler_module2():
     # @app.errorhandler(404)
     # def page_not_found(e):
     #     return render_template('not_found.html'), 404
-    def_page_not_found = handlers_code.find('def', lambda node: \
+    def_page_not_found = handlers_code().find('def', lambda node: \
         node.name == 'page_not_found' and \
         node.arguments[0].target.value == 'e')
     def_page_not_found_exists = def_page_not_found is not None
@@ -152,7 +131,7 @@ def test_not_found_handler_module2():
 def test_error_log_module2():
     # 04. Error Log
     # error_log = configure_logging('error', ERROR)
-    error_log = handlers_code.find('assign', lambda node: node.target.value == 'error_log')
+    error_log = handlers_code().find('assign', lambda node: node.target.value == 'error_log')
     error_log_exists = error_log is not None
     assert error_log_exists, \
         'Are you setting the `error_log` variable correctly?'
@@ -186,7 +165,7 @@ def test_error_handler_module2():
     # @app.errorhandler(Exception)
     # def handle_exception(e):
     #     tb = format_exc()
-    traceback_import = get_imports(handlers_code, 'traceback')
+    traceback_import = get_imports(handlers_code(), 'traceback')
     traceback_import_exits = traceback_import is not None
     assert traceback_import_exits, \
         'Do you have a `traceback` import statement?'
@@ -194,7 +173,7 @@ def test_error_handler_module2():
     assert format_exc_exists, \
         'Are you importing `format_exc` from `traceback` in `cms/handlers.py`?'
 
-    def_handle_exception = handlers_code.find('def', lambda node: \
+    def_handle_exception = handlers_code().find('def', lambda node: \
         node.name == 'handle_exception' and \
         node.arguments[0].target.value == 'e')
     def_handle_exception_exists = def_handle_exception is not None
@@ -227,7 +206,7 @@ def test_error_handler_module2():
 def test_error_log_format_module2():
     # 06. Error Log Format
     # error_log.error('%s - - %s "%s %s %s" 500 -\n%s', request.remote_addr, timestamp, request.method, request.path, request.scheme.upper(), tb)
-    def_handle_exception = handlers_code.find('def', lambda node: \
+    def_handle_exception = handlers_code().find('def', lambda node: \
         node.name == 'handle_exception' and \
         node.arguments[0].target.value == 'e')
     def_handle_exception_exists = def_handle_exception is not None
@@ -304,7 +283,7 @@ def test_render_original_error_template_module2():
     # 08. Render Original Error Template
     # original = getattr(e, 'original_exception', None)
     # return render_template('error.html', error=original), 500
-    def_handle_exception = handlers_code.find('def', lambda node:
+    def_handle_exception = handlers_code().find('def', lambda node:
         node.name == 'handle_exception' and \
         node.arguments[0].target.value == 'e')
     def_handle_exception_exists = def_handle_exception is not None
@@ -355,7 +334,7 @@ def test_render_simple_error_template_module2():
     # 09. Render Simple Error Template
     # if original is None:
     #     return render_template('error.html'), 500
-    def_handle_exception = handlers_code.find('def', lambda node: \
+    def_handle_exception = handlers_code().find('def', lambda node: \
         node.name == 'handle_exception' and \
         node.arguments[0].target.value == 'e')
     def_handle_exception_exists = def_handle_exception is not None
@@ -384,3 +363,5 @@ def test_render_simple_error_template_module2():
 
     assert return_500, \
         'Are you rendering the `error.html` template with a `500` in the `if` statement'
+
+#!

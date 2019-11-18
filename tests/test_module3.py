@@ -1,30 +1,7 @@
 ## Imports
 import pytest
-import re
-import sqlite3
-
-from pathlib import Path
-from redbaron import RedBaron
-
 from tests.utils import *
 #!
-
-## Paths
-handlers = Path.cwd() / 'cms' / 'handlers.py'
-auth = Path.cwd() / 'cms' / 'admin' / 'auth.py'
-#!
-
-## Module Functions
-def get_source_code(file_path):
-    with open(file_path.resolve(), 'r') as source_code:
-        return RedBaron(source_code.read())
-#!
-
-## Source Code
-handlers_code = get_source_code(handlers)
-auth_code = get_source_code(auth)
-#!
-
 
 ## Tests
 @pytest.mark.test_namespace_module3
@@ -32,7 +9,7 @@ def test_namespace_module3():
     # 01. Signals
     # from blinker import Namespace
     # _signals = Namespace()
-    blinker_import = get_imports(auth_code, 'blinker')
+    blinker_import = get_imports(auth_code(), 'blinker')
     blinker_import_exits = blinker_import is not None
     assert blinker_import_exits, \
         'Do you have a `werkzeug.security` import statement?'
@@ -40,7 +17,7 @@ def test_namespace_module3():
     assert namespace_exists, \
         'Are you importing `Namespace` from `blinker` in `cms/handlers.py`?'
 
-    namespace_call = auth_code.find('assign', lambda node:
+    namespace_call = auth_code().find('assign', lambda node:
         node.find('name', lambda node:
             node.value == 'Namespace' and \
             node.next.type == 'call'))
@@ -52,7 +29,7 @@ def test_namespace_module3():
 def test_unauthorized_signal_module3():
     # 02. Unauthorized Signal
     # unauthorized = _signals.signal('unauthorized')
-    namespace_call = auth_code.find('assign', lambda node:
+    namespace_call = auth_code().find('assign', lambda node:
         node.find('name', lambda node:
             node.value == 'Namespace' and \
             node.next.type == 'call'))
@@ -62,7 +39,7 @@ def test_unauthorized_signal_module3():
 
     namespace_instance = namespace_call.target.value
 
-    signal_call = auth_code.find('atomtrailers', lambda node: \
+    signal_call = auth_code().find('atomtrailers', lambda node: \
         node.parent.type == 'assignment' and \
         node.parent.target.value == 'unauthorized' and \
         node.value[0].value == namespace_instance and \
@@ -87,7 +64,7 @@ def test_send_unauthorized_signal_module3():
     # 03. Send Unauthorized Signal
     # from flask import current_app
     # unauthorized.send(current_app._get_current_object(), user_id=user.id, username=user.username)
-    flask_import = get_imports(auth_code, 'flask')
+    flask_import = get_imports(auth_code(), 'flask')
     flask_import_exits = flask_import is not None
     assert flask_import_exits, \
         'Do you have a `flask` import statement?'
@@ -95,7 +72,7 @@ def test_send_unauthorized_signal_module3():
     assert current_app_exists, \
         'Are you importing `current_app` from `flask` in `cms/admin/auth.py`?'
 
-    send_call = auth_code.find('atomtrailers', lambda node: \
+    send_call = auth_code().find('atomtrailers', lambda node: \
         node.value[0].value == 'unauthorized' and \
         node.value[1].value == 'send' and \
         node.value[2].type == 'call')
@@ -125,7 +102,7 @@ def test_send_unauthorized_signal_module3():
 def test_import_unauthorized_signal_module3():
     # 04. Import Unauthorized Signal
     # from cms.admin.auth import unauthorized
-    auth_import = get_imports(handlers_code, 'cms.admin.auth')
+    auth_import = get_imports(handlers_code(), 'cms.admin.auth')
     auth_import_exits = auth_import is not None
     assert auth_import_exits, \
         'Do you have a `cms.admin.auth` import statement?'
@@ -133,12 +110,11 @@ def test_import_unauthorized_signal_module3():
     assert current_app_exists, \
         'Are you importing `unauthorized` from `cms.admin.auth` in `cms/handlers.py`?'
 
-
 @pytest.mark.test_unauthorized_log_module3
 def test_unauthorized_log_module3():
     # 05. Unauthorized Log
     # unauthorized_log = configure_logging('unauthorized', WARN)
-    unauthorized_log = handlers_code.find('assign', lambda node: node.target.value == 'unauthorized_log')
+    unauthorized_log = handlers_code().find('assign', lambda node: node.target.value == 'unauthorized_log')
     unauthorized_log_exists = unauthorized_log is not None
     assert unauthorized_log_exists, \
         'Are you setting the `error_log` variable correctly?'
@@ -165,13 +141,12 @@ def test_unauthorized_log_module3():
     assert second_arg, \
         'Are you passing the correct level to `configure_logging()`?'
 
-
 @pytest.mark.test_unauthorized_log_format_module3
 def test_unauthorized_log_format_module3():
     # 06. Unauthorized Log Format
     # def log_unauthorized(app, user_id, username, **kwargs):
     #     unauthorized_log.warning('Unauthorized: %s %s %s', timestamp, user_id, username)
-    def_log_unauthorized = handlers_code.find('def', lambda node: \
+    def_log_unauthorized = handlers_code().find('def', lambda node: \
         node.name == 'log_unauthorized' and \
         node.arguments[0].target.value == 'app' and \
         node.arguments[1].target.value == 'user_id' and \
@@ -217,7 +192,7 @@ def test_unauthorized_log_format_module3():
 def test_connect_decorator_module3():
     # 07. Connect Decorator
     # @unauthorized.connect
-    def_log_unauthorized = handlers_code.find('def', lambda node: \
+    def_log_unauthorized = handlers_code().find('def', lambda node: \
         node.name == 'log_unauthorized' and \
         node.arguments[0].target.value == 'app' and \
         node.arguments[1].target.value == 'user_id' and \
