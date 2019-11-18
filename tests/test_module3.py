@@ -28,7 +28,7 @@ auth_code = get_source_code(auth)
 
 ## Tests
 @pytest.mark.test_namespace_module3
-def test_models_namespace_module3():
+def test_namespace_module3():
     # 01. Signals
     # from blinker import Namespace
     # _signals = Namespace()
@@ -49,7 +49,7 @@ def test_models_namespace_module3():
 
 
 @pytest.mark.test_unauthorized_signal_module3
-def test_models_unauthorized_signal_module3():
+def test_unauthorized_signal_module3():
     # 02. Unauthorized Signal
     # unauthorized = _signals.signal('unauthorized')
     namespace_call = auth_code.find('assign', lambda node:
@@ -83,7 +83,7 @@ def test_models_unauthorized_signal_module3():
 
 
 @pytest.mark.test_send_unauthorized_signal_module3
-def test_models_send_unauthorized_signal_module3():
+def test_send_unauthorized_signal_module3():
     # 03. Send Unauthorized Signal
     # from flask import current_app
     # unauthorized.send(current_app._get_current_object(), user_id=user.id, username=user.username)
@@ -122,7 +122,7 @@ def test_models_send_unauthorized_signal_module3():
         'Are you passing a `username_exists` keyword argument set to `user.username`?'
 
 @pytest.mark.test_import_unauthorized_signal_module3
-def test_models_import_unauthorized_signal_module3():
+def test_import_unauthorized_signal_module3():
     # 04. Import Unauthorized Signal
     # from cms.admin.auth import unauthorized
     auth_import = get_imports(handlers_code, 'cms.admin.auth')
@@ -135,7 +135,7 @@ def test_models_import_unauthorized_signal_module3():
 
 
 @pytest.mark.test_unauthorized_log_module3
-def test_models_unauthorized_log_module3():
+def test_unauthorized_log_module3():
     # 05. Unauthorized Log
     # unauthorized_log = configure_logging('unauthorized', WARN)
     unauthorized_log = handlers_code.find('assign', lambda node: node.target.value == 'unauthorized_log')
@@ -167,7 +167,7 @@ def test_models_unauthorized_log_module3():
 
 
 @pytest.mark.test_unauthorized_log_format_module3
-def test_models_unauthorized_log_format_module3():
+def test_unauthorized_log_format_module3():
     # 06. Unauthorized Log Format
     # def log_unauthorized(app, user_id, username, **kwargs):
     #     unauthorized_log.warning('Unauthorized: %s %s %s', timestamp, user_id, username)
@@ -214,7 +214,7 @@ def test_models_unauthorized_log_format_module3():
         'Are you passing `username` to `unauthorized_log.warning()` as the fourth argument?'
 
 @pytest.mark.test_connect_decorator_module3
-def test_models_connect_decorator_module3():
+def test_connect_decorator_module3():
     # 07. Connect Decorator
     # @unauthorized.connect
     def_log_unauthorized = handlers_code.find('def', lambda node: \

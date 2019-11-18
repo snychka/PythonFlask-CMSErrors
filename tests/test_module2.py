@@ -32,7 +32,7 @@ auth_code = get_source_code(auth)
 
 ## Tests
 @pytest.mark.test_inject_titles_module2
-def test_models_inject_titles_module2():
+def test_inject_titles_module2():
     # 01. Inject Titles
     # @app.context_processor
     # def inject_titles():
@@ -99,7 +99,7 @@ def test_models_inject_titles_module2():
 
 
 @pytest.mark.test_not_found_template_module2
-def test_models_not_found_template_module2():
+def test_not_found_template_module2():
     # 02. Not Found Template
     # Create `templates/not_found.html`
     assert not_found_template_exists, \
@@ -118,7 +118,7 @@ def test_models_not_found_template_module2():
         'Are you redirecting the user back Home with a call to `url_for()`.'
 
 @pytest.mark.test_not_found_handler_module2
-def test_models_not_found_handler_module2():
+def test_not_found_handler_module2():
     # 03. Not Found Handler
     # @app.errorhandler(404)
     # def page_not_found(e):
@@ -177,7 +177,7 @@ def test_error_log_module2():
         'Are you passing the correct level to `configure_logging()`?'
 
 @pytest.mark.test_error_handler_module2
-def test_models_error_handler_module2():
+def test_error_handler_module2():
     # 05. Error Handler
     # from traceback import format_exc
     # @app.errorhandler(Exception)
@@ -221,7 +221,7 @@ def test_models_error_handler_module2():
         'Are you calling the `format_exc_call()` function and assigning the result to `tb`?'
 
 @pytest.mark.test_error_log_format_module2
-def test_models_error_log_format_module2():
+def test_error_log_format_module2():
     # 06. Error Log Format
     # error_log.error('%s - - %s "%s %s %s" 500 -\n%s', request.remote_addr, timestamp, request.method, request.path, request.scheme.upper(), tb)
     def_handle_exception = handlers_code.find('def', lambda node: \
@@ -274,7 +274,7 @@ def test_models_error_log_format_module2():
         'Are you passing `tb` to `error_log.error()` as the seventh argument?'
 
 @pytest.mark.test_error_template_module2
-def test_models_error_template_module2():
+def test_error_template_module2():
     # 07. Error Template
     # Create `templates/error.html`
     assert error_template_exists, \
@@ -297,7 +297,7 @@ def test_models_error_template_module2():
         'Are you redirecting the user back Home with a call to `url_for()`.'
 
 @pytest.mark.test_render_original_error_template_module2
-def test_models_render_original_error_template_module2():
+def test_render_original_error_template_module2():
     # 08. Render Original Error Template
     # original = getattr(e, 'original_exception', None)
     # return render_template('error.html', error=original), 500
@@ -348,7 +348,7 @@ def test_models_render_original_error_template_module2():
         'The `handle_exception` function should render the `error.html` template with a `500`. Make sure to pass the keyword argument `error` set to the variable created to store the result of the `getattr` call.'
 
 @pytest.mark.test_render_simple_error_template_module2
-def test_models_render_simple_error_template_module2():
+def test_render_simple_error_template_module2():
     # 09. Render Simple Error Template
     # if original is None:
     #     return render_template('error.html'), 500
