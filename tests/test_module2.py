@@ -157,17 +157,17 @@ def test_error_log_module2():
 
     configure_logging_args = get_args(configure_logging_call[1])
 
-    arg_count = len(configure_logging_args) == 2
-    assert arg_count, \
-        'Are you passing the correct number of arguments to `configure_logging()`?'
-
-    first_arg = configure_logging_args[0] == '"error"'
+    first_arg = len(configure_logging_args) >= 1 and configure_logging_args[0] == '"error"'
     assert first_arg, \
         'Are you passing the correct name to `configure_logging()`?'
 
     second_arg = configure_logging_args[1] == 'ERROR'
     assert second_arg, \
         'Are you passing the correct level to `configure_logging()`?'
+
+    arg_count = len(configure_logging_args) == 2
+    assert arg_count, \
+        'Are you passing the correct number of arguments to `configure_logging()`?'
 
 @pytest.mark.test_error_handler_module2
 def test_error_handler_module2():
@@ -199,7 +199,7 @@ def test_error_handler_module2():
 
     decorator_exists = decorator is not None
     assert decorator_exists, \
-        'The `page_not_found` function should have a decorator of `@app.errorhandler(Exception)`.'
+        'The `handle_exception` function should have a decorator of `@app.errorhandler(Exception)`.'
 
     tb = def_handle_exception.find('assign', lambda node: node.target.value == 'tb')
     tb_exists = tb is not None
@@ -234,37 +234,37 @@ def test_error_log_format_module2():
 
     error_args = get_args(error_call[-1], False)
 
-    arg_count = len(error_args) == 7
-    assert arg_count, \
-        'Are you passing the correct number of arguments to `error_log.error()`?'
-
-    first_arg = error_args[0] == '\'%s - - %s "%s %s %s" 500 -\\n%s\''
+    first_arg = len(error_args) >= 1 and error_args[0] == '\'%s - - %s "%s %s %s" 500 -\\n%s\''
     assert first_arg, \
         'Are you passing the correct log format to `error_log.error()` as the first argument?'
 
-    second_arg = error_args[1] == 'request.remote_addr' 
+    second_arg = len(error_args) >= 2 and error_args[1] == 'request.remote_addr' 
     assert second_arg, \
         'Are you passing the `request.remote_addr` to `error_log.error()` as the second argument?'
 
-    third_arg = error_args[2] == 'timestamp' 
+    third_arg = len(error_args) >= 3 and error_args[2] == 'timestamp' 
     assert third_arg, \
         'Are you passing `timestamp` to `error_log.error()` as the third argument?'
 
-    fourth_arg = error_args[3] == 'request.method' 
+    fourth_arg = len(error_args) >= 4 and error_args[3] == 'request.method' 
     assert fourth_arg, \
         'Are you passing `request.method` to `error_log.error()` as the fourth argument?'
 
-    fifth_arg = error_args[4] == 'request.path' 
+    fifth_arg = len(error_args) >= 5 and error_args[4] == 'request.path' 
     assert fifth_arg, \
         'Are you passing `request.path` to `error_log.error()` as the fifth argument?'
 
-    sixth_arg = error_args[5] == 'request.scheme.upper()' 
+    sixth_arg = len(error_args) >= 6 and error_args[5] == 'request.scheme.upper()' 
     assert sixth_arg, \
         'Are you passing `request.scheme.upper()` to `error_log.error()` as the sixth argument?'
 
-    seventh_arg = error_args[6] == 'tb' 
+    seventh_arg = len(error_args) == 7 and error_args[6] == 'tb' 
     assert seventh_arg, \
         'Are you passing `tb` to `error_log.error()` as the seventh argument?'
+
+    arg_count = len(error_args) == 7
+    assert arg_count, \
+        'Are you passing the correct number of arguments to `error_log.error()`?'
 
 @pytest.mark.test_error_template_module2
 def test_error_template_module2():
@@ -374,5 +374,4 @@ def test_render_simple_error_template_module2():
 
     assert return_500, \
         'Are you rendering the `error.html` template with a `500` in the `if` statement'
-
 #!

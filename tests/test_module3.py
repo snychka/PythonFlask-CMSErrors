@@ -15,7 +15,7 @@ def test_namespace_module3():
         'Do you have a `werkzeug.security` import statement?'
     namespace_exists = 'Namespace' in blinker_import
     assert namespace_exists, \
-        'Are you importing `Namespace` from `blinker` in `cms/handlers.py`?'
+        'Are you importing `Namespace` from `blinker` in `cms/admin/auth.py`?'
 
     namespace_call = auth_code().find('assign', lambda node:
         node.find('name', lambda node:
@@ -23,7 +23,7 @@ def test_namespace_module3():
             node.next.type == 'call'))
     namespace_call_exists = namespace_call is not None
     assert namespace_call_exists, \
-        'Are you creating an instance of `Namespace()`?'
+        'Are you creating an instance of `Namespace()` in `cms/admin/auth.py`?'
 
 @pytest.mark.test_unauthorized_signal_module3
 def test_unauthorized_signal_module3():
@@ -82,21 +82,21 @@ def test_send_unauthorized_signal_module3():
 
     send_args = get_args(send_call[-1])
 
-    arg_count = len(send_args) == 3
-    assert arg_count, \
-        'Are you passing the correct number of arguments to the `unauthorized.send()` function?'
-
-    first_arg = send_args[0] == 'current_app._get_current_object()'
+    first_arg = len(send_args) >= 1 and send_args[0] == 'current_app._get_current_object()'
     assert first_arg, \
         'Are you passing `current_app._get_current_object()` to `unauthorized.send()` as the first argument?'
 
     user_id_exists = 'user_id:user.id' in send_args
     assert user_id_exists, \
-        'Are you passing a `user_id` keyword argument set to `user.id`?'
+        'Are you passing a `user_id` keyword argument set to `user.id` to the `unauthorized.send()` function?'
 
     username_exists = 'username:user.username' in send_args
     assert username_exists, \
-        'Are you passing a `username_exists` keyword argument set to `user.username`?'
+        'Are you passing a `username` keyword argument set to `user.username` to the `unauthorized.send()` function?'
+
+    arg_count = len(send_args) == 3
+    assert arg_count, \
+        'Are you passing the correct number of arguments to the `unauthorized.send()` function?'
 
 @pytest.mark.test_import_unauthorized_signal_module3
 def test_import_unauthorized_signal_module3():
@@ -117,7 +117,7 @@ def test_unauthorized_log_module3():
     unauthorized_log = handlers_code().find('assign', lambda node: node.target.value == 'unauthorized_log')
     unauthorized_log_exists = unauthorized_log is not None
     assert unauthorized_log_exists, \
-        'Are you setting the `error_log` variable correctly?'
+        'Are you setting the `unauthorized_log` variable correctly?'
 
     configure_logging_call = unauthorized_log.find('atomtrailers', lambda node: \
         node.value[0].value == 'configure_logging' and \
@@ -125,21 +125,21 @@ def test_unauthorized_log_module3():
         )
     configure_logging_call_exists = configure_logging_call is not None
     assert configure_logging_call_exists, \
-        'Are you calling the `configure_logging()` function and assigning the result to `error_log`?'
+        'Are you calling the `configure_logging()` function and assigning the result to `unauthorized_log`?'
 
     configure_logging_args = get_args(configure_logging_call[1])
+
+    first_arg = len(configure_logging_args) >= 1 and configure_logging_args[0] == '"unauthorized"'
+    assert first_arg, \
+        'Are you passing the correct name to `configure_logging()`?'
+
+    second_arg = len(configure_logging_args) == 2 and configure_logging_args[1] == 'WARN'
+    assert second_arg, \
+        'Are you passing the correct level to `configure_logging()`?'
 
     arg_count = len(configure_logging_args) == 2
     assert arg_count, \
         'Are you passing the correct number of arguments to `configure_logging()`?'
-
-    first_arg = configure_logging_args[0] == '"unauthorized"'
-    assert first_arg, \
-        'Are you passing the correct name to `configure_logging()`?'
-
-    second_arg = configure_logging_args[1] == 'WARN'
-    assert second_arg, \
-        'Are you passing the correct level to `configure_logging()`?'
 
 @pytest.mark.test_unauthorized_log_format_module3
 def test_unauthorized_log_format_module3():
@@ -156,7 +156,7 @@ def test_unauthorized_log_format_module3():
 
     def_log_unauthorized_exists = def_log_unauthorized is not None
     assert def_log_unauthorized_exists, \
-        'Have you created a function called `log_unauthorized`? Do you have the correct parameters?'
+        'Have you created a function called `log_unauthorized`? Does it have the correct parameters?'
 
     warning_call = def_log_unauthorized.find('atomtrailers', lambda node: \
         node.value[0].value == 'unauthorized_log' and \
@@ -168,25 +168,25 @@ def test_unauthorized_log_format_module3():
 
     warning_args = get_args(warning_call[-1], False)
 
-    arg_count = len(warning_args) == 4
-    assert arg_count, \
-        'Are you passing the correct number of arguments to `unauthorized_log.warning()`?'
-
-    first_arg = warning_args[0].replace("'", '"') == '"Unauthorized: %s %s %s"'
+    first_arg = len(warning_args) >= 1 and warning_args[0].replace("'", '"') == '"Unauthorized: %s %s %s"'
     assert first_arg, \
         'Are you passing the correct log format to `unauthorized_log.warning()` as the first argument?'
 
-    second_arg = warning_args[1] == 'timestamp'
+    second_arg = len(warning_args) >= 2 and warning_args[1] == 'timestamp'
     assert second_arg, \
         'Are you passing `timestamp` to `unauthorized_log.warning()` as the third argument?'
 
-    third_arg = warning_args[2] == 'user_id'
+    third_arg = len(warning_args) >= 3 and warning_args[2] == 'user_id'
     assert third_arg, \
         'Are you passing `user_id` to `unauthorized_log.warning()` as the third argument?'
 
-    fourth_arg = warning_args[3] == 'username'
+    fourth_arg = len(warning_args) >= 4 and warning_args[3] == 'username'
     assert fourth_arg, \
         'Are you passing `username` to `unauthorized_log.warning()` as the fourth argument?'
+
+    arg_count = len(warning_args) == 4
+    assert arg_count, \
+        'Are you passing the correct number of arguments to `unauthorized_log.warning()`?'
 
 @pytest.mark.test_connect_decorator_module3
 def test_connect_decorator_module3():

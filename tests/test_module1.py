@@ -122,11 +122,7 @@ def test_rotating_file_handler_module1():
 
     rotating_file_args = get_args(rotating_file_call[1])
 
-    arg_count = len(rotating_file_args) == 3
-    assert arg_count, \
-        'Are you passing the correct number of keyword arguments to `RotatingFileHandler()`?'
-
-    first_arg = rotating_file_args[0] == '"logs/{}.log".format(name)'
+    first_arg = len(rotating_file_args) >= 1 and rotating_file_args[0] == '"logs/{}.log".format(name)'
     assert first_arg, \
         'Are you passing the correct path to the `RotatingFileHandler`?'
 
@@ -137,6 +133,10 @@ def test_rotating_file_handler_module1():
     backup_count_exists = 'backupCount:10' in rotating_file_args
     assert backup_count_exists, \
         'Are you passing a `backupCount` keyword argument set to `10`?'
+
+    arg_count = len(rotating_file_args) == 3
+    assert arg_count, \
+        'Are you passing the correct number of keyword arguments to `RotatingFileHandler()`?'
 
 @pytest.mark.test_add_handler_module1
 def test_add_handler_module1():
@@ -235,17 +235,17 @@ def test_access_log_module1():
 
     configure_logging_args = get_args(configure_logging_call[1])
 
-    arg_count = len(configure_logging_args) == 2
-    assert arg_count, \
-        'Are you passing the correct number of arguments to `configure_logging()`?'
-
-    first_arg = configure_logging_args[0] == '"access"'
+    first_arg = len(configure_logging_args) >= 1 and configure_logging_args[0] == '"access"'
     assert first_arg, \
         'Are you passing the correct name to `configure_logging()`?'
 
     second_arg = configure_logging_args[1] == 'INFO'
     assert second_arg, \
         'Are you passing the correct level to `configure_logging()`?'
+
+    arg_count = len(configure_logging_args) == 2
+    assert arg_count, \
+        'Are you passing the correct number of arguments to `configure_logging()`?'
 
 @pytest.mark.test_after_request_module1
 def test_after_request_module1():
@@ -293,37 +293,37 @@ def test_access_log_format_module1():
 
     info_args = get_args(info_call[-1], False)
 
-    arg_count = len(info_args) == 7
-    assert arg_count, \
-        'Are you passing the correct number of arguments to `access_log.info()`?'
-
-    first_arg = info_args[0] == '\'%s - - %s "%s %s %s" %s -\'' 
+    first_arg = len(info_args) >= 1 and info_args[0] == '\'%s - - %s "%s %s %s" %s -\'' 
     assert first_arg, \
         'Are you passing the correct log format to `access_log.info()` as the first argument?'
 
-    second_arg = info_args[1] == 'request.remote_addr' 
+    second_arg = len(info_args) >= 2 and info_args[1] == 'request.remote_addr' 
     assert second_arg, \
         'Are you passing the `request.remote_addr` to `access_log.info()` as the second argument?'
 
-    third_arg = info_args[2] == 'timestamp' 
+    third_arg = len(info_args) >= 3 and info_args[2] == 'timestamp' 
     assert third_arg, \
         'Are you passing `timestamp` to `access_log.info()` as the third argument?'
 
-    fourth_arg = info_args[3] == 'request.method' 
+    fourth_arg = len(info_args) >= 4 and info_args[3] == 'request.method' 
     assert fourth_arg, \
         'Are you passing `request.method` to `access_log.info()` as the fourth argument?'
 
-    fifth_arg = info_args[4] == 'request.path' 
+    fifth_arg = len(info_args) >= 5 and info_args[4] == 'request.path' 
     assert fifth_arg, \
         'Are you passing `request.path` to `access_log.info()` as the fifth argument?'
 
-    sixth_arg = info_args[5] == 'request.scheme.upper()' 
+    sixth_arg = len(info_args) >= 6 and info_args[5] == 'request.scheme.upper()' 
     assert sixth_arg, \
         'Are you passing `request.scheme.upper()` to `access_log.info()` as the sixth argument?'
 
-    seventh_arg = info_args[6] == 'response.status_code' 
+    seventh_arg = len(info_args) == 7 and info_args[6] == 'response.status_code' 
     assert seventh_arg, \
         'Are you passing `response.status_code` to `access_log.info()` as the seventh argument?'
+
+    arg_count = len(info_args) == 7
+    assert arg_count, \
+        'Are you passing the correct number of arguments to `access_log.info()`?'
 
 @pytest.mark.test_valid_status_codes_module1
 def test_valid_status_codes_module1():
