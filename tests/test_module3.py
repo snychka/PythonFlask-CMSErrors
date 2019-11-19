@@ -106,8 +106,8 @@ def test_import_unauthorized_signal_module3():
     auth_import_exits = auth_import is not None
     assert auth_import_exits, \
         'Do you have a `cms.admin.auth` import statement?'
-    current_app_exists = 'unauthorized' in auth_import
-    assert current_app_exists, \
+    unauthorized_exists = 'unauthorized' in auth_import
+    assert unauthorized_exists, \
         'Are you importing `unauthorized` from `cms.admin.auth` in `cms/handlers.py`?'
 
 @pytest.mark.test_unauthorized_log_module3

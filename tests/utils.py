@@ -5,8 +5,11 @@ from jinja2 import Environment, PackageLoader, exceptions, meta, nodes
 from pathlib import Path
 from redbaron import RedBaron
 
-def get_source_code(filename):
-    file_path = Path.cwd() / 'cms' / filename
+def get_source_code(filename, admin=False):
+    if admin:
+        file_path = Path.cwd() / 'cms' / 'admin' / filename
+    else:
+        file_path = Path.cwd() / 'cms' / filename
     grammar = parso.load_grammar()
     module = grammar.parse(path=file_path.resolve())
     parse_error = len(grammar.iter_errors(module)) == 0
@@ -27,7 +30,7 @@ def handlers_code():
     return get_source_code('handlers.py')
 
 def auth_code():
-    return get_source_code('auth.py')
+    return get_source_code('auth.py', True)
 
 def rq(string):
     return re.sub(r'(\'|")', '', str(string))
