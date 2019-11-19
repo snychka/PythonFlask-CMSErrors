@@ -21,7 +21,7 @@ def test_inject_titles_module2():
     inject_titles = handlers_code().find('def', name='inject_titles')
     inject_titles_exists = inject_titles is not None
     assert inject_titles_exists, \
-        'Have you created a function called `inject_titles` with a parameter of `response`?'
+        'Have you created a function called `inject_titles`?'
 
     decorator_exists = inject_titles.find('decorator', lambda node: node.find('dotted_name', lambda node: \
           node.value[0].value == 'app' and \
@@ -41,6 +41,10 @@ def test_inject_titles_module2():
         node.value[3].type == 'call'
         )
 
+    with_entities_call_exists = with_entities_call is not None
+    assert with_entities_call_exists, \
+        'Are you calling the `Content.query.with_entities()` function?'
+
     with_entities_call_node = with_entities_call.find('name', value='with_entities').next
     with_entities_args = get_args(with_entities_call_node)
 
@@ -52,26 +56,33 @@ def test_inject_titles_module2():
     assert title_arg, \
         'Are you passing `Content.title` to the `with_entities()` function?'
 
-    join_call = with_entities_call.find('name', value='join').next
-    join_args = get_args(join_call)
+    join_call = with_entities_call.find('name', value='join')
+    join_call_exists = join_call is not None
+    assert join_call_exists, \
+        'Are you appending a call to `join()` on the `Content.query.with_entities()` call?'
 
+    join_args = get_args(join_call.next)
     type_arg = 'Type' in join_args
     assert type_arg, \
         'Are you passing `Type` to the `join()` function?'
 
-    filter_call = with_entities_call.find('name', value='filter').next
-    filter_args = get_args(filter_call)
+    filter_call = with_entities_call.find('name', value='filter')
+    filter_call_exists = filter_call is not None
+    assert filter_call_exists, \
+        'Are you appending a call to `filter()` on the `join()` call?'
+    filter_args = get_args(filter_call.next)
 
     page_arg = 'Type.name=="page"' in filter_args
     assert page_arg, \
         'Are you passing the correct condition to the `filter()` function?'
 
-    return_dict = inject_titles.find('return', lambda node: \
+    return_dict = inject_titles.find('atomtrailers', lambda node:
+        node.parent.type == 'return' and \
         node.value[0].value == 'dict' and \
         node.value[1].type == 'call')
     return_dict_exists = return_dict is not None
     assert return_dict_exists, \
-        'Are you returning a `dict()`?'
+        'Are you returning a `dict()` from the `inject_titles()` function?'
 
     return_dict_args = 'titles:titles' in get_args(return_dict.find('call'))
     assert return_dict_args, \
