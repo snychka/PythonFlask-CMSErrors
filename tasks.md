@@ -101,7 +101,7 @@ The access log should only contain valid requests. Above the `info()` in the `af
 
 ## 2.6 - Error Log Format
 [tag]: # "@pytest.mark.test_error_log_format_module2"
-[code]: # "error_log.error('%s - - %s &quot;%s %s %s&quot; 500 -\n%s', request.remote_addr, timestamp, request.method, request.path, request.scheme.upper(), tb)"
+[code]: # "error_log.error('%s - - %s "%s %s %s" 500 -\n%s', request.remote_addr, timestamp, request.method, request.path, request.scheme.upper(), tb)"
 
 
 ## 2.7 - Error Template
