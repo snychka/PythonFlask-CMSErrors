@@ -78,6 +78,19 @@ The access log should only contain valid requests. Above the `info()` in the `af
 [tag]: # "@pytest.mark.test_inject_titles_module2"
 [code]: # "@app.context_processor; def inject_titles(): titles = Content.query.with_entities(Content.slug, Content.title).join(Type).filter(Type.name == 'page'); return dict(titles=titles)"
 
+### Module Overview
+In this module we'll handle 404 and 500 errors. When these errors happen the user will be redirected to the appropriate template. The 500 errors will also be logged to an error log.
+
+### First Task
+We would like you used the `titles` template variable in both of our custom templates. To do this we can use a context processor. 
+
+First, create a function called `inject_titles`. In the body declare a variable called `titles` and assign it a call to `Content.query.with_entities()`. To `with_entities()`, pass the _Content_ `slug` and the `title`.
+
+Second, refine our query to only select the content type of _page_. Chain a call to `join()` on `with_entities()` and pass the `Type` class. Chain another call to `filter()` with a conditional that filters by page. **Hint: Where `Type.name` equals `'page'`.** 
+
+Third, below the `titles` variable, return a `dict()` with a keyword argument of `titles` set to `titles`.
+
+Finally, add the `@app.context_processor` decorator to the `inject_titles()` function.
 
 ## 2.2 - Not Found Template
 [tag]: # "@pytest.mark.test_not_found_template_module2"
