@@ -57,13 +57,13 @@ Create a new function called `after_request`. It should have one parameter calle
 [code]: # "access_log.info('%s - - %s "%s %s %s" %s -', request.remote_addr, timestamp, request.method, request.path, request.scheme.upper(), response.status_code)"
 We have at this point created an `access_log`. Let's now write all info level events to this log. Call the `info` method on `access_log` and pass in the following information in the order noted:
 
-- Format: `'%s - - %s "%s %s %s" %s -'`
-- Request remote address
-- timestamp *Hint: Previously declared*
-- Request method
-- Request path
-- Request scheme *Hint: Should be uppercase*
-- Response status code
+1. Format: `'%s - - %s "%s %s %s" %s -'`
+2. Request remote address
+3. timestamp *Hint: Previously declared*
+4. Request method
+5. Request path
+6. Request scheme *Hint: Should be uppercase*
+7. Response status code
 
 Example: `127.0.0.1 - - [20/Nov/2019 14:59:12] "GET / HTTP" 200 -`
 
@@ -84,7 +84,7 @@ In this module we'll handle 404 and 500 errors. When these errors happen the use
 ### First Task
 We would like you used the `titles` template variable in both of our custom templates. To do this we can use a context processor. 
 
-First, create a function called `inject_titles`. In the body declare a variable called `titles` and assign it a call to `Content.query.with_entities()`. To `with_entities()`, pass the _Content_ `slug` and the `title`.
+First, open the `cms/handlers.py` file and create a function called `inject_titles`. In the body declare a variable called `titles` and assign it a call to `Content.query.with_entities()`. To `with_entities()`, pass the _Content_ `slug` and `title`.
 
 Second, refine our query to only select the content type of _page_. Chain a call to `join()` on `with_entities()` and pass the `Type` class. Chain another call to `filter()` with a conditional that filters by page. **Hint: Where `Type.name` equals `'page'`.** 
 
@@ -95,42 +95,67 @@ Finally, add the `@app.context_processor` decorator to the `inject_titles()` fun
 ## 2.2 - Not Found Template
 [tag]: # "@pytest.mark.test_not_found_template_module2"
 [code]: # "Create `templates/error.html`"
+In preparation for handling 404 errors we need a template to render. Create a new file called `not_found.html` in the `cms/templates` folder. 
 
+As the first line of the template, extend the `base.html` template. Next, create a template block called `content`.  Lastly, create a link in the template block that points the user back to the home page. **Hint: url_for,  `index` route, and slug is `'home'`.**
 
 ## 2.3 -Not Found Handler
 [tag]: # "@pytest.mark.test_not_found_handler_module2"
 [code]: # "@app.errorhandler(404); def page_not_found(e): return render_template('not_found.html'), 404"
+When 404 errors happen let\'s now render the template we just created. Open `cms/handlers.py` and create a new function called `page_not_found`. It should have one parameter called `e`. In the body render the `not_found.html` template. Make sure to add a status code of `404`.
 
+Attach the `errorhandler` decorator to this function with the `404` status code.
 
 ## 2.4 - Error Log
 [tag]: # "@pytest.mark.test_error_log_module2"
 [code]: # "error_log = configure_logging('error', ERROR)"
-
+Still in `cms/handlers.py`, below the existing code, use the `configure_logging` function to create a log called `error.log`. **Hint: pass the correct `name`.** Make sure to log events at the `ERROR` level. Save a reference to the result of this call in a variable called `error_log`.
 
 ## 2.5 - Error Handler
 [tag]: # "@pytest.mark.test_error_handler_module2"
-[code]: # "@app.errorhandler(Exception); def handle_exception(e): tb = format_exc()"
+[code]: # "from traceback import format_exc; @app.errorhandler(Exception); def handle_exception(e): tb = format_exc()"
+Still in `cms/handlers.py`, below the existing imports, import the `format_exec` method from `traceback`. Then, below the 404 error handler, create a new function called `handle_exception`. It should have one parameter called `e`. In the body call the `format_exc()` function and assign the result to a variable called `tb`.
 
+Attach the `errorhandler` decorator to this function with the `404` status code.
 
 ## 2.6 - Error Log Format
 [tag]: # "@pytest.mark.test_error_log_format_module2"
 [code]: # "error_log.error('%s - - %s "%s %s %s" 500 -\n%s', request.remote_addr, timestamp, request.method, request.path, request.scheme.upper(), tb)"
+We have at this point created an `error_log`. Let's now write all error level events to this log. In the `handle_exception` function, call the `error` method on `error_log` and pass in the following information in the order noted:
 
+1. Format: `'%s - - %s "%s %s %s" 500 -\n%s'`
+2. Request remote address
+3. timestamp *Hint: Previously declared*
+4. Request method
+5. Request path
+6. Request scheme *Hint: Should be uppercase*
+7. Traceback *Hint: Previously declared*
+
+Example: 
+```
+127.0.0.1 - - [20/Nov/2019 14:59:12] "GET / HTTP" 200 -
+Traceback (Error) ...
+  File ...
+TypeError ...
+```
 
 ## 2.7 - Error Template
 [tag]: # "@pytest.mark.test_error_template_module2"
 [code]: # "Create `templates/error.html`"
+In preparation for handling 500 errors we need a template to render. Create a new file called `error.html` in the `cms/templates` folder. 
 
+As the first line of the template, extend the `base.html` template. Next, create a template block called `content`.  In the template block add an `error` template variable. Lastly, create a link in the template block that points the user back to the home page. **Hint: url_for,  `index` route, and slug is `'home'`.**
 
 ## 2.8 - Render Original Error Template
 [tag]: # "@pytest.mark.test_render_original_error_template_module2"
 [code]: # "original = getattr(e, 'original_exception', None); return render_template('error.html', error=original), 500"
 
+Return back to the `handle_exception` function in `cms/handlers.py`. Add a statement that <i>get</i>'s the `'original_exception'` <i>attr</i>ibute from `e`. Assign this to a variable named `original`. Then render the `error.html` template, pass an `error` keyword argument set to `original`. Make sure to add a status code of `500`.
 
 ## 2.9 - Render Simple Error Template
 [tag]: # "@pytest.mark.test_render_simple_error_template_module2"
 [code]: # "if original is None: return render_template('error.html'), 500"
-
+Just above the existing `return` statement in the `handle_exception` function add an `if` statement that checks if `original` is `None`. If so render the `error.html` template with a `500` status code.
 
 # Module 3 - Unauthorized Log
 
