@@ -45,7 +45,7 @@ Below the `configure_logging` function, use the `strftime()` method to get the c
 [code]: # "from logging import INFO, WARN, ERROR; access_log = configure_logging('access', INFO)"
 To log certain types of events import the levels `INFO`, `WARN`, and `ERROR` from the correct module.
 
-With these imported, use the `configure_logging` function to create a log called `access.log`. **Hint: pass the correct `name`.** Make sure to log events at the `INFO` level. Save a reference to the result of this call in a variable called `access_log`.
+With these imported, use the `configure_logging` function to create a log called `access.log`. **Hint: pass the correct `name`.** Make sure to log events at the `INFO` level. Save the result of this call in a variable called `access_log`.
 
 ## 1.7 - After Request
 [tag]: # "@pytest.mark.test_after_request_module1"
@@ -109,7 +109,7 @@ Attach the `errorhandler` decorator to this function with the `404` status code.
 ## 2.4 - Error Log
 [tag]: # "@pytest.mark.test_error_log_module2"
 [code]: # "error_log = configure_logging('error', ERROR)"
-Still in `cms/handlers.py`, below the existing code, use the `configure_logging` function to create a log called `error.log`. **Hint: pass the correct `name`.** Make sure to log events at the `ERROR` level. Save a reference to the result of this call in a variable called `error_log`.
+Still in `cms/handlers.py`, below the existing code, use the `configure_logging` function to create a log called `error.log`. **Hint: pass the correct `name`.** Make sure to log events at the `ERROR` level. Save the result of this call in a variable called `error_log`.
 
 ## 2.5 - Error Handler
 [tag]: # "@pytest.mark.test_error_handler_module2"
@@ -163,32 +163,51 @@ Just above the existing `return` statement in the `handle_exception` function ad
 [tag]: # "@pytest.mark.test_namespace_module3"
 [code]: # "from blinker import Namespace; _signals = Namespace()"
 
+### Module Overview
+In this module we'll create a signal to write unauthorized login attempts to a log file.
+
+### First Task
+Open the `cms/admin/auth.py` file and at the top below the other imports, import `Namespace` from `blinker`.
+
+Also at the top create an instance of `Namespace` named `_signals`.
 
 ## 3.2 - Unauthorized Signal
 [tag]: # "@pytest.mark.test_unauthorized_signal_module3"
 [code]: # "unauthorized = _signals.signal('unauthorized')"
-
+Still in `cms/admin/auth.py`, create a new signal by calling `signal()` on `_signals`. Pass the name `'unauthorized'` to the `signal()` method and then assign the result to a variable with the same name.
 
 ## 3.3 - Send Unauthorized Signal
 [tag]: # "@pytest.mark.test_send_unauthorized_signal_module3"
 [code]: # "unauthorized.send(current_app._get_current_object(), user_id=user.id, username=user.username)"
+Before sending the signal, import `current_app` from `flask` at the top of `cms/admin/auth.py`.
 
+The signal should be sent when there is an unauthorized login attempt. Find the `else` statement in the `login` route of `cms/admin/auth.py`. Add a call to the `send()` method of the `unauthorized` signal. 
+
+Pass three values to the `send()` method the current app object (`current_app._get_current_object()`), the `user.id` as `user_id`, and `user.username` as `username`.
 
 ## 3.4 - Import Unauthorized Signal
 [tag]: # "@pytest.mark.test_import_unauthorized_signal_module3"
 [code]: # "from cms.admin.auth import unauthorized"
 
+Switch back to the `cms/handlers.py` file and import the new `unauthorized` signal from `auth.py`.
 
 ## 3.5 - Unauthorized Log
 [tag]: # "@pytest.mark.test_unauthorized_log_module3"
 [code]: # "unauthorized_log = configure_logging('unauthorized', WARN)"
 
+Still in `cms/handlers.py`, below the existing code, use the `configure_logging` function to create a log called `unauthorized.log`. **Hint: pass the correct `name`.** Make sure to log events at the `WARN` level. Save the result of this call in a variable called `unauthorized_log`.
 
 ## 3.6 - Unauthorized Log Format
 [tag]: # "@pytest.mark.test_unauthorized_log_format_module3"
 [code]: # "def log_unauthorized(app, user_id, username, **kwargs): unauthorized_log.warning('Unauthorized: %s %s %s', timestamp, user_id, username)"
+At the bottom of `cms/handlers.py` create a function called `log_unauthorized` that will eventually connect to the `unauthorized` signal.
 
+The `log_unauthorized` function should accept four parameters named and ordered as follows, `app`, `user_id`, `username` and ``**kwargs`. 
 
+The function body should have a single line that calls the `warning()` method of `unauthorized_log`. The format of each log entry should be: 
+`Unauthorized: [20/Nov/2019 14:59:12] 1 psdemo` where `1` is the `user_id` and `psdemo` is the `username`.
 ## 3.7 - Connect Decorator
 [tag]: # "@pytest.mark.test_connect_decorator_module3"
 [code]: # "@unauthorized.connect"
+
+To _connect_ the `log_unauthorized` function to the `unauthorized` signal decorator the it properly. 
