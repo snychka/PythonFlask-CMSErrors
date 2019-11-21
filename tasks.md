@@ -210,4 +210,4 @@ The function body should have a single line that calls the `warning()` method of
 [tag]: # "@pytest.mark.test_connect_decorator_module3"
 [code]: # "@unauthorized.connect"
 
-To _connect_ the `log_unauthorized` function to the `unauthorized` signal decorator the it properly. 
+To _connect_ the `log_unauthorized` function to the `unauthorized` signal decorator the `log_unauthorized` properly. 
