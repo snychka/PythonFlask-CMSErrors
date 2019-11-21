@@ -70,7 +70,7 @@ Example: `127.0.0.1 - - [20/Nov/2019 14:59:12] "GET / HTTP" 200 -`
 ## 1.9 - Valid Status Codes
 [tag]: # "@pytest.mark.test_valid_status_codes_module1"
 [code]: # "if int(response.status_code) < 400:"
-The access log should only contain valid requests. Above the `info()` in the `after_request()` function add an `if` statement. The condition should check in the response status code is less than 400. *Hint: You will need to convert the status code to an `int()`.*
+The access log should only contain valid requests. Above the `info()` in the `after_request()` function add an `if` statement. The condition should check in the response status code is less than 400. **Hint: You will need to convert the status code to an `int()`.**
 
 # Module 2 - Error Log
 
@@ -210,4 +210,4 @@ The function body should have a single line that calls the `warning()` method of
 [tag]: # "@pytest.mark.test_connect_decorator_module3"
 [code]: # "@unauthorized.connect"
 
-To _connect_ the `log_unauthorized` function to the `unauthorized` signal decorator the `log_unauthorized` properly. 
+Decorate the `log_unauthorized` function with the correct decorator to _connect_ it to the `unauthorized` signal. 

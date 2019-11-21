@@ -21,7 +21,7 @@ def test_disable_werkzeug_logging_module1():
     request_log = handlers_code().find('assign', lambda node: node.target.value == 'request_log')
     request_log_exists = request_log is not None
     assert request_log_exists, \
-        'Are you setting the `user_id` variable correctly?'
+        'Are you setting the `request_log` variable correctly?'
     get_call = request_log.find('atomtrailers', lambda node: \
         node.value[0].value == 'getLogger' and \
         node.value[1].type == 'call'
