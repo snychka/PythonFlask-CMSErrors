@@ -68,6 +68,6 @@ venv/
 .venv/
 
 # Project Logs
-logs/access.log
-logs/error.log
-logs/unauthorized.log
+#logs/access.log
+#logs/error.log
+#logs/unauthorized.log
